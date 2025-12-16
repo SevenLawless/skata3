@@ -1,430 +1,767 @@
-# Railway Deployment Guide
+# Railway Deployment Guide - Complete Step-by-Step Instructions
 
-This guide will walk you through deploying your Agency Work Management application to Railway step by step.
-
-## 🚀 Quick Start Summary
-
-If you're experienced with Railway, here's the TL;DR:
-
-1. Create Railway project from GitHub repo
-2. Add MySQL database service
-3. Set environment variables (use service references for DB vars)
-4. Deploy (automatic on git push)
-5. Run `backend/database.sql` to initialize database
-6. Set `REACT_APP_API_URL` to your Railway app URL + `/api`
-
-**Required Environment Variables:**
-- `NODE_ENV=production`
-- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` (use `${{MySQL.MYSQLHOST}}` format)
-- `JWT_SECRET` (generate a secure random string)
-- `REACT_APP_API_URL` (your Railway URL + `/api`)
+This comprehensive guide will walk you through deploying your Agency Work Management application to Railway with **three separate services**: MySQL Database, Backend API, and Frontend.
 
 ---
 
-## Table of Contents
+## 📋 Table of Contents
+
 1. [Prerequisites](#prerequisites)
-2. [Setting Up Railway Account](#setting-up-railway-account)
-3. [Creating a New Project](#creating-a-new-project)
-4. [Setting Up MySQL Database](#setting-up-mysql-database)
-5. [Configuring Environment Variables](#configuring-environment-variables)
-6. [Deploying the Application](#deploying-the-application)
-7. [Running Database Migrations](#running-database-migrations)
-8. [Verifying Deployment](#verifying-deployment)
-9. [Troubleshooting](#troubleshooting)
-10. [Updating Your Application](#updating-your-application)
+2. [Project Overview](#project-overview)
+3. [Step 1: Create Railway Account and Project](#step-1-create-railway-account-and-project)
+4. [Step 2: Add MySQL Database Service](#step-2-add-mysql-database-service)
+5. [Step 3: Deploy Backend Service](#step-3-deploy-backend-service)
+6. [Step 4: Deploy Frontend Service](#step-4-deploy-frontend-service)
+7. [Step 5: Configure Environment Variables](#step-5-configure-environment-variables)
+8. [Step 6: Initialize Database](#step-6-initialize-database)
+9. [Step 7: Verify Deployment](#step-7-verify-deployment)
+10. [Step 8: Troubleshooting](#step-8-troubleshooting)
+11. [Step 9: Updating Your Application](#step-9-updating-your-application)
 
 ---
 
 ## Prerequisites
 
-Before you begin, make sure you have:
+Before starting, ensure you have:
 
-- ✅ A GitHub account (or GitLab/Bitbucket)
-- ✅ Your code pushed to a Git repository
-- ✅ A Railway account (free tier available)
-- ✅ Basic understanding of environment variables
-
----
-
-## Step 1: Setting Up Railway Account
-
-1. **Visit Railway**: Go to [https://railway.app](https://railway.app)
-
-2. **Sign Up/Login**:
-   - Click "Login" or "Start a New Project"
-   - You can sign up with GitHub, GitLab, or email
-   - **Recommended**: Use GitHub for easier integration
-
-3. **Verify Your Account**: Follow the email verification process if required
+- ✅ **GitHub Account** (or GitLab/Bitbucket) with your code repository
+- ✅ **Railway Account** - Sign up at [railway.app](https://railway.app) (free tier available)
+- ✅ **Code Pushed to Git** - Your `skata2` repository must be pushed to GitHub
+- ✅ **Basic Terminal Knowledge** - For running commands (optional, for database setup)
 
 ---
 
-## Step 2: Creating a New Project
+## Project Overview
 
-1. **Create New Project**:
-   - Once logged in, click the "+ New Project" button
-   - Select "Deploy from GitHub repo" (or your Git provider)
-   - Authorize Railway to access your repositories if prompted
+Your Railway project will consist of **3 separate services**:
 
-2. **Select Your Repository**:
-   - Find and select your `skata2` repository
-   - Click "Deploy Now"
+1. **MySQL Database Service** - Stores all application data
+2. **Backend Service** - Node.js/Express API server (runs on port assigned by Railway)
+3. **Frontend Service** - React application (serves built static files)
 
-3. **Wait for Initial Build**:
-   - Railway will automatically detect your project structure
-   - The first build may take a few minutes
-   - You'll see build logs in real-time
+Each service will have its own:
+- Environment variables
+- Build configuration
+- Public URL (for backend and frontend)
+- Logs and monitoring
 
 ---
 
-## Step 3: Setting Up MySQL Database
+## Step 1: Create Railway Account and Project
 
-Your application requires a MySQL database. Railway provides managed MySQL databases.
+### 1.1 Sign Up for Railway
 
-1. **Add MySQL Service**:
-   - In your Railway project dashboard, click "+ New"
-   - Select "Database" → "Add MySQL"
+1. Go to [https://railway.app](https://railway.app)
+2. Click **"Login"** or **"Start a New Project"** button (top right)
+3. Choose your sign-up method:
+   - **Recommended**: **"Login with GitHub"** (easiest for repository access)
+   - Alternative: Sign up with email
+4. Complete the authentication process
+5. Verify your email if required
 
-2. **Wait for Database Creation**:
-   - Railway will create a MySQL instance
-   - This takes about 1-2 minutes
-   - You'll see a new service in your project
+### 1.2 Create New Project
 
-3. **Get Database Connection Details**:
-   - Click on the MySQL service
-   - Go to the "Variables" tab
-   - You'll see connection variables like:
-     - `MYSQLHOST`
-     - `MYSQLPORT`
-     - `MYSQLUSER`
-     - `MYSQLPASSWORD`
-     - `MYSQLDATABASE`
-   - **Note these down** - you'll need them in the next step
+1. Once logged in, you'll see the Railway dashboard
+2. Click the **"+ New Project"** button (top left or center of dashboard)
+3. Select **"Deploy from GitHub repo"**
+   - If this is your first time, you'll need to authorize Railway to access your GitHub repositories
+   - Click **"Configure GitHub App"** and follow the prompts
+   - Select which repositories Railway can access (or all repositories)
+4. In the repository list, find and click on your **`skata2`** repository
+5. Railway will automatically create a new project and start detecting your project structure
 
----
-
-## Step 4: Configuring Environment Variables
-
-Your application needs several environment variables to run properly.
-
-1. **Open Your Application Service**:
-   - In your Railway project, click on your main application service (not the database)
-   - Go to the "Variables" tab
-
-2. **Add the Following Environment Variables**:
-
-   Click "New Variable" for each of these:
-
-   | Variable Name | Description | Example Value |
-   |--------------|-------------|---------------|
-   | `NODE_ENV` | Environment mode | `production` |
-   | `PORT` | Server port (Railway sets this automatically, but you can override) | `5000` |
-   | `DB_HOST` | MySQL host | Use `${{MySQL.MYSQLHOST}}` (Railway reference) |
-   | `DB_PORT` | MySQL port | Use `${{MySQL.MYSQLPORT}}` |
-   | `DB_USER` | MySQL username | Use `${{MySQL.MYSQLUSER}}` |
-   | `DB_PASSWORD` | MySQL password | Use `${{MySQL.MYSQLPASSWORD}}` |
-   | `DB_NAME` | MySQL database name | Use `${{MySQL.MYSQLDATABASE}}` |
-   | `JWT_SECRET` | Secret key for JWT tokens | Generate a strong random string (see below) |
-   | `REACT_APP_API_URL` | Frontend API URL | Your Railway app URL (e.g., `https://your-app.railway.app/api`) |
-
-3. **Using Railway Service References** (Recommended):
-   - Instead of copying database values manually, use Railway's service references
-   - For `DB_HOST`: Click "New Variable" → Name: `DB_HOST` → Value: `${{MySQL.MYSQLHOST}}`
-   - For `DB_PORT`: `${{MySQL.MYSQLPORT}}`
-   - For `DB_USER`: `${{MySQL.MYSQLUSER}}`
-   - For `DB_PASSWORD`: `${{MySQL.MYSQLPASSWORD}}`
-   - For `DB_NAME`: `${{MySQL.MYSQLDATABASE}}`
-   - Replace `MySQL` with your actual MySQL service name if different
-
-4. **Generate JWT_SECRET**:
-   - You can generate a secure random string using:
-     - Online: [https://randomkeygen.com/](https://randomkeygen.com/)
-     - Terminal: `openssl rand -base64 32`
-     - Or use any secure random string generator
-   - Example: `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6`
-
-5. **Set REACT_APP_API_URL**:
-   - After your first deployment, Railway will provide a URL like `https://your-app-name.railway.app`
-   - Set `REACT_APP_API_URL` to: `https://your-app-name.railway.app/api`
-   - **Note**: You'll need to update this after the first deployment to get the actual URL
-
-6. **Save All Variables**:
-   - Make sure all variables are saved
-   - Railway will automatically redeploy when you add/modify variables
+**Important**: At this point, Railway may try to auto-deploy. We'll configure the services properly in the next steps, so don't worry if the initial deployment fails.
 
 ---
 
-## Step 5: Deploying the Application
+## Step 2: Add MySQL Database Service
 
-1. **Configure Build Settings** (if needed):
-   - Railway should auto-detect your Node.js application
-   - If not, go to your service → Settings → Build & Deploy
-   - Build Command: `cd frontend && npm run build`
-   - Start Command: `cd backend && npm start`
-   - Root Directory: `/` (root of your repository)
+### 2.1 Add MySQL Service
 
-2. **Monitor the Deployment**:
-   - Go to the "Deployments" tab
-   - Watch the build logs
-   - The build process will:
-     - Install backend dependencies
-     - Install frontend dependencies
-     - Build the React frontend
-     - Start the Node.js server
+1. In your Railway project dashboard, you should see your project name at the top
+2. Click the **"+ New"** button (or **"+ Add Service"**)
+3. From the dropdown menu, select **"Database"**
+4. Click **"Add MySQL"**
+5. Railway will create a MySQL database instance
+   - This process takes approximately **1-2 minutes**
+   - You'll see a new service card appear in your project
 
-3. **Check for Errors**:
-   - If the build fails, check the logs
-   - Common issues:
-     - Missing environment variables
-     - Build errors in frontend
-     - Database connection issues
+### 2.2 Note Database Service Name
 
-4. **Get Your Application URL**:
-   - Once deployed, Railway will provide a public URL
-   - Go to Settings → Networking
-   - You'll see a domain like: `https://your-app-name.railway.app`
-   - Copy this URL
+1. Look at the MySQL service card in your project
+2. **Remember or note down the service name** (it might be "MySQL" or something like "mysql-xxxxx")
+   - You'll need this exact name for environment variable references
+   - Example: If the service is named "MySQL", you'll use `${{MySQL.MYSQLHOST}}`
+   - If it's named "mysql-abc123", you'll use `${{mysql-abc123.MYSQLHOST}}`
 
-5. **Update REACT_APP_API_URL** (if needed):
-   - If you set a placeholder earlier, update it now with the actual URL
-   - Add `/api` at the end: `https://your-app-name.railway.app/api`
-   - Railway will redeploy automatically
+### 2.3 Get Database Connection Details
+
+1. Click on the **MySQL service card** to open its details
+2. Go to the **"Variables"** tab
+3. You'll see these environment variables automatically created:
+   - `MYSQLHOST` - Database hostname
+   - `MYSQLPORT` - Database port (usually 3306)
+   - `MYSQLUSER` - Database username
+   - `MYSQLPASSWORD` - Database password
+   - `MYSQLDATABASE` - Database name
+   - `MYSQL_URL` - Full connection string
+
+**Important**: You don't need to copy these values manually. We'll use Railway's service references in the next steps.
 
 ---
 
-## Step 6: Running Database Migrations
+## Step 3: Deploy Backend Service
 
-Your database needs to be initialized with the required tables.
+### 3.1 Add Backend Service from Repository
+
+1. In your Railway project dashboard, click **"+ New"** (or **"+ Add Service"**)
+2. Select **"GitHub Repo"**
+3. Select your **`skata2`** repository again
+4. Railway will create a new service from your repository
+
+### 3.2 Configure Backend Service Settings
+
+1. Click on the **backend service** (it might be named after your repo or "web")
+2. Click on **"Settings"** tab
+3. Configure the following:
+
+   **Service Name** (optional but recommended):
+   - Click the service name at the top to rename it
+   - Rename to: **"backend"** or **"api"** (for clarity)
+
+   **Root Directory**:
+   - Scroll to **"Root Directory"** section
+   - Set to: **`backend`**
+   - This tells Railway to run commands from the `backend` folder
+
+   **Build Command** (if visible):
+   - Should be: **`npm install`** (or leave empty, Railway will auto-detect)
+   - Railway will automatically run `npm install` in the `backend` directory
+
+   **Start Command**:
+   - Should be: **`npm start`**
+   - This runs `node server.js` as defined in `backend/package.json`
+
+### 3.3 Verify Backend Service Configuration
+
+1. Go to the **"Deployments"** tab
+2. You should see Railway attempting to build and deploy
+3. The build will likely fail initially (we haven't set environment variables yet)
+4. This is expected - we'll fix it in Step 5
+
+**Note**: The backend service will get its own public URL (e.g., `https://backend-production-xxxx.up.railway.app`). We'll use this URL in the frontend configuration.
+
+---
+
+## Step 4: Deploy Frontend Service
+
+### 4.1 Add Frontend Service from Repository
+
+1. In your Railway project dashboard, click **"+ New"** again
+2. Select **"GitHub Repo"**
+3. Select your **`skata2`** repository (same repo, different service)
+4. Railway will create another service
+
+### 4.2 Configure Frontend Service Settings
+
+1. Click on the **frontend service**
+2. Click on **"Settings"** tab
+3. Configure the following:
+
+   **Service Name**:
+   - Rename to: **"frontend"** or **"web"**
+
+   **Root Directory**:
+   - Set to: **`frontend`**
+   - This tells Railway to run commands from the `frontend` folder
+
+   **Build Command**:
+   - Set to: **`npm install && npm run build`**
+   - This installs dependencies and builds the React app
+
+   **Start Command**:
+   - Set to: **`npx serve -s build -l 3000`**
+   - This serves the built React app using the `serve` package
+   - The `-s` flag enables single-page app routing support
+   - The `-l 3000` sets the port (Railway will override this with its own PORT)
+
+   **Alternative Start Command** (if serve doesn't work):
+   - You can also use: **`npm run serve`** (if you add it to package.json)
+   - Or: **`npx serve -s build`** (Railway will set PORT automatically)
+
+### 4.3 Verify Frontend Service Configuration
+
+1. Go to the **"Deployments"** tab
+2. Railway will attempt to build the frontend
+3. The build should complete, but the app won't work correctly until we set `REACT_APP_API_URL` in Step 5
+
+**Note**: The frontend service will get its own public URL (e.g., `https://frontend-production-xxxx.up.railway.app`). This is the URL users will visit.
+
+---
+
+## Step 5: Configure Environment Variables
+
+This is a **critical step**. Environment variables must be set correctly for all services to work.
+
+### 5.1 Backend Service Environment Variables
+
+1. Click on your **backend service**
+2. Go to the **"Variables"** tab
+3. Click **"+ New Variable"** for each variable below
+
+   Add these variables **one by one**:
+
+   | Variable Name | Value | Notes |
+   |--------------|-------|-------|
+   | `NODE_ENV` | `production` | Sets Node.js to production mode |
+   | `PORT` | *(leave empty or remove)* | Railway automatically sets this - don't override |
+   | `DB_HOST` | `${{MySQL.MYSQLHOST}}` | Replace `MySQL` with your actual MySQL service name |
+   | `DB_PORT` | `${{MySQL.MYSQLPORT}}` | Replace `MySQL` with your actual MySQL service name |
+   | `DB_USER` | `${{MySQL.MYSQLUSER}}` | Replace `MySQL` with your actual MySQL service name |
+   | `DB_PASSWORD` | `${{MySQL.MYSQLPASSWORD}}` | Replace `MySQL` with your actual MySQL service name |
+   | `DB_NAME` | `${{MySQL.MYSQLDATABASE}}` | Replace `MySQL` with your actual MySQL service name |
+   | `JWT_SECRET` | *(generate a secure random string)* | See instructions below |
+   | `FRONTEND_URL` | `https://your-frontend-url.railway.app` | Get this from frontend service settings (see below) |
+   | `CORS_ORIGIN` | `https://your-frontend-url.railway.app` | Same as FRONTEND_URL (for CORS) |
+
+   **Important Notes**:
+   - For database variables, use the format `${{ServiceName.VARIABLE}}`
+   - Replace `MySQL` with your actual MySQL service name (check Step 2.2)
+   - Railway service references automatically update if database credentials change
+   - You can find your MySQL service name by clicking on the MySQL service card
+
+   **How to Get Your MySQL Service Name**:
+   1. Look at your MySQL service card in the project dashboard
+   2. The name is displayed on the card (e.g., "MySQL", "mysql-abc123")
+   3. Use that exact name in the variable references
+
+   **Generate JWT_SECRET**:
+   - Option 1 (Terminal): Run `openssl rand -base64 32`
+   - Option 2 (Online): Visit [https://randomkeygen.com/](https://randomkeygen.com/) and copy a CodeIgniter Encryption Keys
+   - Option 3 (Node.js): Run `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`
+   - Use a long, random string (at least 32 characters)
+
+   **Get Frontend URL** (for FRONTEND_URL and CORS_ORIGIN):
+   1. Click on your **frontend service**
+   2. Go to **"Settings"** → **"Networking"**
+   3. You'll see a **"Public Domain"** or **"Generate Domain"** button
+   4. Click **"Generate Domain"** if no domain exists
+   5. Copy the URL (e.g., `https://frontend-production-xxxx.up.railway.app`)
+   6. Use this exact URL (without trailing slash) for `FRONTEND_URL` and `CORS_ORIGIN`
+
+### 5.2 Frontend Service Environment Variables
+
+1. Click on your **frontend service**
+2. Go to the **"Variables"** tab
+3. Click **"+ New Variable"**
+
+   Add this variable:
+
+   | Variable Name | Value | Notes |
+   |--------------|-------|-------|
+   | `REACT_APP_API_URL` | `https://your-backend-url.railway.app/api` | Get backend URL from backend service settings |
+
+   **Get Backend URL**:
+   1. Click on your **backend service**
+   2. Go to **"Settings"** → **"Networking"**
+   3. You'll see a **"Public Domain"** or **"Generate Domain"** button
+   4. Click **"Generate Domain"** if no domain exists
+   5. Copy the URL (e.g., `https://backend-production-xxxx.up.railway.app`)
+   6. Add `/api` at the end: `https://backend-production-xxxx.up.railway.app/api`
+   7. Use this exact URL for `REACT_APP_API_URL`
+
+   **Important**: 
+   - The variable name **must** start with `REACT_APP_` for React to read it
+   - After setting this variable, Railway will automatically rebuild the frontend
+   - The build process embeds this URL into the React app at build time
+
+### 5.3 MySQL Service Environment Variables
+
+**No action needed** - Railway automatically creates all required MySQL environment variables. They are:
+- `MYSQLHOST`
+- `MYSQLPORT`
+- `MYSQLUSER`
+- `MYSQLPASSWORD`
+- `MYSQLDATABASE`
+- `MYSQL_URL`
+
+These are used by the backend service via service references (the `${{MySQL.*}}` syntax).
+
+### 5.4 Verify Environment Variables
+
+After setting all variables:
+
+1. **Backend Service**: Go to Variables tab, verify all 10 variables are present
+2. **Frontend Service**: Go to Variables tab, verify `REACT_APP_API_URL` is present
+3. **Check Service References**: 
+   - In backend variables, the database variables should show as references (not actual values)
+   - They should look like: `${{MySQL.MYSQLHOST}}` (with your service name)
+
+### 5.5 Trigger Redeployment
+
+After adding environment variables:
+
+1. Railway **automatically redeploys** services when variables are added/modified
+2. Go to **"Deployments"** tab in each service to watch the redeployment
+3. Wait for builds to complete (may take 2-5 minutes)
+
+---
+
+## Step 6: Initialize Database
+
+Your database is empty and needs to be initialized with tables.
 
 ### Option A: Using Railway CLI (Recommended)
 
-1. **Install Railway CLI**:
+#### 6.1 Install Railway CLI
+
+1. Open your terminal/command prompt
+2. Install Railway CLI globally:
    ```bash
    npm install -g @railway/cli
    ```
+   Or using other package managers:
+   ```bash
+   # Using yarn
+   yarn global add @railway/cli
+   
+   # Using pnpm
+   pnpm add -g @railway/cli
+   ```
 
-2. **Login to Railway**:
+#### 6.2 Login to Railway
+
+1. In terminal, run:
    ```bash
    railway login
    ```
+2. This will open your browser for authentication
+3. Authorize Railway CLI to access your account
 
-3. **Link Your Project**:
+#### 6.3 Link to Your Project
+
+1. Navigate to your project directory:
+   ```bash
+   cd path/to/your/skata2
+   ```
+2. Link Railway CLI to your project:
    ```bash
    railway link
    ```
-   - Select your project when prompted
+3. You'll see a list of your Railway projects
+4. Select the project you created (use arrow keys and press Enter)
+5. Railway CLI is now linked to your project
 
-4. **Run Database Migration**:
+#### 6.4 Run Database Initialization
+
+1. Make sure you're in the project root directory (`skata2`)
+2. Run the database initialization script:
    ```bash
-   railway run mysql -h $MYSQLHOST -u $MYSQLUSER -p$MYSQLPASSWORD $MYSQLDATABASE < backend/database.sql
+   railway run --service MySQL mysql -h $MYSQLHOST -u $MYSQLUSER -p$MYSQLPASSWORD $MYSQLDATABASE < backend/database.sql
    ```
    
-   Or using Railway's MySQL service:
+   **Alternative method** (if the above doesn't work):
    ```bash
-   railway connect mysql
+   railway connect MySQL
    ```
-   Then paste the contents of `backend/database.sql`
+   This opens an interactive MySQL session. Then:
+   ```sql
+   source backend/database.sql;
+   ```
+   Or copy and paste the contents of `backend/database.sql` into the MySQL prompt.
 
-### Option B: Using MySQL Workbench or Command Line
+3. Verify tables were created:
+   ```bash
+   railway run --service MySQL mysql -h $MYSQLHOST -u $MYSQLUSER -p$MYSQLPASSWORD $MYSQLDATABASE -e "SHOW TABLES;"
+   ```
+   You should see: `users`, `work_items`, `activity_logs`
 
-1. **Get Connection String**:
-   - In Railway, go to your MySQL service
-   - Click "Connect" or check the Variables tab
-   - You'll get connection details
+### Option B: Using MySQL Client (DBeaver, MySQL Workbench, etc.)
 
-2. **Connect to Database**:
-   - Use MySQL Workbench, DBeaver, or command line
-   - Host: Your `MYSQLHOST`
-   - Port: Your `MYSQLPORT`
-   - Username: Your `MYSQLUSER`
-   - Password: Your `MYSQLPASSWORD`
-   - Database: Your `MYSQLDATABASE`
+#### 6.1 Get Connection Details
 
-3. **Run SQL Scripts**:
-   - Execute `backend/database.sql`
-   - Execute `backend/migration_add_name_and_source.sql` (if exists)
-   - Execute `backend/migration_add_recurrence_and_activity.sql` (if exists)
+1. In Railway dashboard, click on your **MySQL service**
+2. Go to **"Variables"** tab
+3. Note down these values:
+   - `MYSQLHOST` - Hostname
+   - `MYSQLPORT` - Port (usually 3306)
+   - `MYSQLUSER` - Username
+   - `MYSQLPASSWORD` - Password
+   - `MYSQLDATABASE` - Database name
 
-### Option C: Using Railway's Web Interface
+#### 6.2 Connect to Database
 
-1. **Open MySQL Service**:
-   - Click on your MySQL service in Railway
-   - Go to "Data" or "Connect" tab
-   - Railway may provide a web-based SQL editor
+1. Open your MySQL client (DBeaver, MySQL Workbench, TablePlus, etc.)
+2. Create a new connection with these details:
+   - **Host**: Value from `MYSQLHOST`
+   - **Port**: Value from `MYSQLPORT`
+   - **Username**: Value from `MYSQLUSER`
+   - **Password**: Value from `MYSQLPASSWORD`
+   - **Database**: Value from `MYSQLDATABASE`
+3. Connect to the database
 
-2. **Run SQL Scripts**:
-   - Copy contents of `backend/database.sql`
-   - Paste and execute in the SQL editor
-   - Run any migration files as well
+#### 6.3 Run SQL Scripts
+
+1. Open the file `backend/database.sql` in a text editor
+2. Copy the entire contents
+3. In your MySQL client, paste and execute the SQL
+4. Verify tables were created:
+   ```sql
+   SHOW TABLES;
+   ```
+   You should see: `users`, `work_items`, `activity_logs`
+
+#### 6.4 Run Migration Scripts (if needed)
+
+If you have existing data or need to run migrations:
+
+1. Open `backend/migration_add_name_and_source.sql`
+2. Copy and execute in MySQL client
+3. Open `backend/migration_add_recurrence_and_activity.sql`
+4. Copy and execute in MySQL client
+
+### Option C: Using Railway Web Interface (if available)
+
+Some Railway plans provide a web-based database interface:
+
+1. Click on your **MySQL service**
+2. Look for **"Data"**, **"Connect"**, or **"Query"** tab
+3. If available, you can run SQL directly in the web interface
+4. Copy and paste contents of `backend/database.sql`
+5. Execute the SQL
 
 ---
 
-## Step 7: Verifying Deployment
+## Step 7: Verify Deployment
 
-1. **Test Health Endpoint**:
-   - Visit: `https://your-app-name.railway.app/api/health`
-   - You should see: `{"status":"OK","message":"Server is running"}`
+### 7.1 Check Service Status
 
-2. **Test Frontend**:
-   - Visit: `https://your-app-name.railway.app`
-   - You should see your React application
+1. In Railway dashboard, verify all 3 services show **"Active"** or **"Deployed"** status
+2. Each service should have a green indicator
 
-3. **Test Registration**:
-   - Try creating a new account
-   - Check if it saves to the database
+### 7.2 Test Backend API
 
-4. **Check Logs**:
-   - In Railway dashboard, go to "Deployments"
-   - Click on the latest deployment
-   - Check "Logs" tab for any errors
+1. Get your backend URL from backend service → Settings → Networking
+2. Test the health endpoint:
+   - Open: `https://your-backend-url.railway.app/api/health`
+   - You should see: `{"status":"OK","message":"Server is running","timestamp":"..."}`
+3. If you get an error, check backend service logs
+
+### 7.3 Test Frontend
+
+1. Get your frontend URL from frontend service → Settings → Networking
+2. Open the URL in your browser: `https://your-frontend-url.railway.app`
+3. You should see your React application
+4. Try these actions:
+   - **Register a new account** - Should create a user in the database
+   - **Login** - Should authenticate and redirect
+   - **Create a work item** - Should save to database
+   - **View work items** - Should load from database
+
+### 7.4 Check Service Logs
+
+If something doesn't work:
+
+1. **Backend Logs**:
+   - Click backend service → "Deployments" → Latest deployment → "Logs"
+   - Look for errors, especially database connection errors
+
+2. **Frontend Logs**:
+   - Click frontend service → "Deployments" → Latest deployment → "Logs"
+   - Look for build errors or runtime errors
+
+3. **MySQL Logs**:
+   - Click MySQL service → "Logs"
+   - Usually minimal, but check for connection issues
+
+### 7.5 Verify Database Connection
+
+1. Create a test user through the frontend
+2. Check if it appears in the database:
+   ```bash
+   railway run --service MySQL mysql -h $MYSQLHOST -u $MYSQLUSER -p$MYSQLPASSWORD $MYSQLDATABASE -e "SELECT * FROM users;"
+   ```
+   Or use your MySQL client to query the `users` table
 
 ---
 
 ## Step 8: Troubleshooting
 
-### Build Fails
+### Issue: Backend Service Won't Start
 
-**Issue**: Build process fails
-- **Solution**: Check build logs for specific errors
-- Common causes:
-  - Missing dependencies in package.json
-  - Build script errors
-  - Node version incompatibility
+**Symptoms**: Backend deployment fails or service crashes
 
-### Database Connection Errors
+**Solutions**:
+1. **Check Environment Variables**:
+   - Verify all backend environment variables are set
+   - Especially check database variables use correct service reference format
+   - Example: `${{MySQL.MYSQLHOST}}` (replace `MySQL` with your service name)
 
-**Issue**: "Cannot connect to database"
-- **Solution**: 
-  - Verify all database environment variables are set correctly
-  - Check that MySQL service is running
-  - Verify service references are correct (e.g., `${{MySQL.MYSQLHOST}}`)
+2. **Check Logs**:
+   - Backend service → Deployments → Latest → Logs
+   - Look for specific error messages
+   - Common errors:
+     - "Cannot connect to database" → Check DB_* variables
+     - "Port already in use" → Remove PORT variable (Railway sets it)
+     - "Module not found" → Check package.json dependencies
 
-### Frontend Can't Connect to API
+3. **Verify Root Directory**:
+   - Backend service → Settings → Root Directory should be `backend`
 
-**Issue**: Frontend shows API errors
-- **Solution**:
-  - Verify `REACT_APP_API_URL` is set correctly
-  - Make sure it includes `/api` at the end
-  - Check CORS settings in backend (should allow your Railway domain)
+4. **Check Start Command**:
+   - Should be: `npm start`
+   - This runs `node server.js` from backend directory
 
-### 404 Errors on Page Refresh
+### Issue: Frontend Can't Connect to Backend
 
-**Issue**: Getting 404 when refreshing pages
-- **Solution**: 
-  - This is already handled in `server.js` with the catch-all route
-  - Verify the production static file serving is working
+**Symptoms**: Frontend loads but shows API errors, network errors, or CORS errors
 
-### Environment Variables Not Working
+**Solutions**:
+1. **Verify REACT_APP_API_URL**:
+   - Frontend service → Variables → Check `REACT_APP_API_URL`
+   - Should be: `https://your-backend-url.railway.app/api`
+   - Must include `/api` at the end
+   - Must use `https://` (not `http://`)
 
-**Issue**: Variables not being read
-- **Solution**:
-  - Make sure variables are set in the correct service (your app, not database)
-  - Restart the service after adding variables
-  - Check variable names match exactly (case-sensitive)
+2. **Verify Backend CORS Configuration**:
+   - Backend service → Variables → Check `FRONTEND_URL` and `CORS_ORIGIN`
+   - Should match your frontend URL exactly (no trailing slash)
+   - Example: `https://frontend-production-xxxx.up.railway.app`
 
-### Port Issues
+3. **Rebuild Frontend**:
+   - After changing `REACT_APP_API_URL`, Railway should auto-rebuild
+   - If not, manually trigger: Frontend service → Deployments → Redeploy
 
-**Issue**: Application not starting
-- **Solution**:
-  - Railway automatically sets `PORT` environment variable
-  - Your code should use `process.env.PORT || 5000`
-  - Don't hardcode port numbers
+4. **Check Browser Console**:
+   - Open browser DevTools (F12)
+   - Check Console tab for CORS errors
+   - Check Network tab to see if API calls are being made
+
+### Issue: Database Connection Errors
+
+**Symptoms**: Backend logs show "ECONNREFUSED", "Access denied", or "Unknown database"
+
+**Solutions**:
+1. **Verify Service References**:
+   - Backend variables should use `${{ServiceName.VARIABLE}}` format
+   - Replace `ServiceName` with your actual MySQL service name
+   - Check MySQL service name: Click MySQL service → Name is at the top
+
+2. **Verify MySQL Service is Running**:
+   - MySQL service should show "Active" status
+   - If not, wait a few minutes for it to start
+
+3. **Check Variable Names**:
+   - Backend should have: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
+   - Case-sensitive - must match exactly
+
+4. **Test Connection Manually**:
+   ```bash
+   railway connect MySQL
+   ```
+   If this works, the issue is with backend configuration, not database
+
+### Issue: Frontend Shows Blank Page or 404
+
+**Symptoms**: Frontend URL loads but shows blank page or "Cannot GET /"
+
+**Solutions**:
+1. **Check Start Command**:
+   - Frontend service → Settings → Start Command
+   - Should be: `npx serve -s build -l 3000`
+   - The `-s` flag is critical for React Router to work
+
+2. **Verify Build Completed**:
+   - Frontend service → Deployments → Latest → Logs
+   - Look for "Build successful" or "Compiled successfully"
+   - If build failed, fix build errors first
+
+3. **Check Root Directory**:
+   - Frontend service → Settings → Root Directory should be `frontend`
+
+### Issue: Environment Variables Not Working
+
+**Symptoms**: Variables are set but application doesn't use them
+
+**Solutions**:
+1. **Frontend Variables**:
+   - Must start with `REACT_APP_` prefix
+   - Changes require a rebuild (Railway does this automatically)
+   - Check build logs to verify variables were embedded
+
+2. **Backend Variables**:
+   - Restart service after adding variables
+   - Go to Deployments → Redeploy latest
+
+3. **Service References**:
+   - Format: `${{ServiceName.VARIABLE}}`
+   - No spaces, exact service name
+   - Railway shows these as references (not actual values) in the UI
+
+### Issue: Build Fails
+
+**Symptoms**: Deployment shows "Build failed" or exits with error code
+
+**Solutions**:
+1. **Check Build Logs**:
+   - Service → Deployments → Latest → Logs
+   - Scroll to find the actual error
+
+2. **Common Build Errors**:
+   - **"npm ERR!"** → Dependency installation failed
+     - Check package.json for syntax errors
+     - Verify all dependencies are valid
+   - **"Module not found"** → Missing dependency
+     - Add to package.json and commit
+   - **"Out of memory"** → Frontend build needs more memory
+     - Railway free tier has limits
+     - Try optimizing build or upgrade plan
+
+3. **Verify Configuration**:
+   - Root Directory is correct
+   - Build Command is correct
+   - Start Command is correct
+
+### Issue: Services Keep Restarting
+
+**Symptoms**: Services show as "Restarting" or crash repeatedly
+
+**Solutions**:
+1. **Check Logs for Crash Reason**:
+   - Service → Logs tab
+   - Look for error messages before crash
+
+2. **Common Causes**:
+   - Missing environment variables
+   - Database connection failing
+   - Port conflicts
+   - Application errors (check code)
+
+3. **Verify All Required Variables**:
+   - Use the checklist in Step 5
+   - Ensure all variables are set correctly
 
 ---
 
 ## Step 9: Updating Your Application
 
-1. **Make Changes Locally**:
-   - Edit your code
-   - Test locally
+### 9.1 Making Code Changes
 
-2. **Commit and Push**:
+1. **Make Changes Locally**:
+   - Edit your code in your local development environment
+   - Test changes locally if possible
+
+2. **Commit Changes**:
    ```bash
    git add .
-   git commit -m "Your commit message"
+   git commit -m "Description of changes"
    git push origin main
    ```
+   (Replace `main` with your branch name if different)
 
 3. **Automatic Deployment**:
-   - Railway will automatically detect the push
-   - It will rebuild and redeploy your application
-   - Monitor the deployment in Railway dashboard
+   - Railway automatically detects git pushes
+   - It will rebuild and redeploy affected services
+   - You can watch the deployment in Railway dashboard
 
-4. **Manual Redeploy** (if needed):
-   - Go to Railway dashboard
-   - Click on your service
-   - Go to "Deployments"
-   - Click "Redeploy" on the latest deployment
+### 9.2 Updating Environment Variables
 
----
+1. **Add/Modify Variables**:
+   - Go to service → Variables tab
+   - Add new variable or edit existing one
+   - Railway automatically redeploys the service
 
-## Additional Configuration
+2. **Remove Variables**:
+   - Variables tab → Click trash icon next to variable
+   - Service will redeploy automatically
 
-### Custom Domain (Optional)
+### 9.3 Manual Redeployment
 
-1. **Add Custom Domain**:
-   - Go to Settings → Networking
-   - Click "Custom Domain"
-   - Add your domain
-   - Follow DNS configuration instructions
+If automatic deployment doesn't trigger:
 
-2. **Update REACT_APP_API_URL**:
-   - Update the environment variable with your custom domain
-   - Add `/api` at the end
+1. Go to service → **"Deployments"** tab
+2. Find the latest deployment
+3. Click **"Redeploy"** button (three dots menu)
+4. Service will rebuild and redeploy
 
-### Environment-Specific Variables
+### 9.4 Database Migrations
 
-You can set different variables for different environments:
-- Production: Set in Railway dashboard
-- Development: Use `.env` file locally (not committed to Git)
+When you need to update database schema:
 
-### Monitoring and Logs
-
-- **View Logs**: Railway dashboard → Your service → Logs
-- **Metrics**: Railway provides basic metrics in the dashboard
-- **Alerts**: Set up alerts for deployment failures
+1. Create migration SQL file (e.g., `backend/migration_v2.sql`)
+2. Run it using Railway CLI:
+   ```bash
+   railway run --service MySQL mysql -h $MYSQLHOST -u $MYSQLUSER -p$MYSQLPASSWORD $MYSQLDATABASE < backend/migration_v2.sql
+   ```
+3. Or use MySQL client to execute the migration
 
 ---
 
-## Quick Reference: Environment Variables Checklist
+## Quick Reference Checklist
 
-Before deploying, ensure you have:
+Before considering deployment complete, verify:
 
-- [ ] `NODE_ENV=production`
-- [ ] `DB_HOST` (or `${{MySQL.MYSQLHOST}}`)
-- [ ] `DB_PORT` (or `${{MySQL.MYSQLPORT}}`)
-- [ ] `DB_USER` (or `${{MySQL.MYSQLUSER}}`)
-- [ ] `DB_PASSWORD` (or `${{MySQL.MYSQLPASSWORD}}`)
-- [ ] `DB_NAME` (or `${{MySQL.MYSQLDATABASE}}`)
-- [ ] `JWT_SECRET` (strong random string)
-- [ ] `REACT_APP_API_URL` (your Railway app URL + `/api`)
+### MySQL Service
+- [ ] Service is "Active"
+- [ ] Database initialized with tables (users, work_items, activity_logs)
+- [ ] Can connect to database
+
+### Backend Service
+- [ ] Service is "Active"
+- [ ] Root Directory: `backend`
+- [ ] Start Command: `npm start`
+- [ ] Environment Variables Set:
+  - [ ] `NODE_ENV=production`
+  - [ ] `DB_HOST=${{MySQL.MYSQLHOST}}` (with correct service name)
+  - [ ] `DB_PORT=${{MySQL.MYSQLPORT}}`
+  - [ ] `DB_USER=${{MySQL.MYSQLUSER}}`
+  - [ ] `DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}`
+  - [ ] `DB_NAME=${{MySQL.MYSQLDATABASE}}`
+  - [ ] `JWT_SECRET` (secure random string)
+  - [ ] `FRONTEND_URL` (frontend service URL)
+  - [ ] `CORS_ORIGIN` (frontend service URL)
+- [ ] Health endpoint works: `/api/health`
+
+### Frontend Service
+- [ ] Service is "Active"
+- [ ] Root Directory: `frontend`
+- [ ] Build Command: `npm install && npm run build`
+- [ ] Start Command: `npx serve -s build -l 3000`
+- [ ] Environment Variables Set:
+  - [ ] `REACT_APP_API_URL` (backend URL + `/api`)
+- [ ] Frontend loads in browser
+- [ ] Can register/login
+- [ ] Can create/view work items
 
 ---
 
-## Support
+## Additional Resources
 
-If you encounter issues:
-
-1. Check Railway documentation: [https://docs.railway.app](https://docs.railway.app)
-2. Check Railway status: [https://status.railway.app](https://status.railway.app)
-3. Review application logs in Railway dashboard
-4. Verify all environment variables are set correctly
+- **Railway Documentation**: [https://docs.railway.app](https://docs.railway.app)
+- **Railway Status**: [https://status.railway.app](https://status.railway.app)
+- **Railway Discord**: [https://discord.gg/railway](https://discord.gg/railway) (for community support)
 
 ---
 
 ## Summary
 
-Your application is now deployed! The key steps were:
+You've successfully deployed a 3-service application to Railway:
 
-1. ✅ Created Railway account and project
-2. ✅ Added MySQL database service
-3. ✅ Configured all environment variables
-4. ✅ Deployed application (automatic on git push)
-5. ✅ Ran database migrations
-6. ✅ Verified deployment
+1. ✅ **MySQL Database** - Stores your application data
+2. ✅ **Backend API** - Handles business logic and database operations
+3. ✅ **Frontend** - Serves your React application to users
 
-Your app should now be accessible at: `https://your-app-name.railway.app`
+**Your application URLs**:
+- Frontend: `https://your-frontend-url.railway.app` (users visit this)
+- Backend API: `https://your-backend-url.railway.app/api` (frontend calls this)
+- Database: Internal (only accessible by backend service)
+
+**Next Steps**:
+- Monitor your services in Railway dashboard
+- Set up custom domains (optional)
+- Configure monitoring and alerts (optional)
+- Scale services if needed (Railway Pro plan)
 
 ---
 
-**Last Updated**: This guide is based on Railway's current interface. Railway may update their UI, but the core concepts remain the same.
+**Last Updated**: This guide is current as of Railway's latest interface. Railway may update their UI, but the core deployment concepts remain the same.

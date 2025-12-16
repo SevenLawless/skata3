@@ -452,7 +452,11 @@ Some Railway plans provide a web-based database interface:
 2. Test the health endpoint:
    - Open: `https://your-backend-url.railway.app/api/health`
    - You should see: `{"status":"OK","message":"Server is running","timestamp":"..."}`
-3. If you get an error, check backend service logs
+3. Test the database health endpoint:
+   - Open: `https://your-backend-url.railway.app/api/health/db`
+   - You should see: `{"status":"OK","message":"Database connection successful","timestamp":"..."}`
+   - If this fails, your database connection or tables are not set up correctly
+4. If you get an error, check backend service logs
 
 ### 7.3 Test Frontend
 
@@ -555,6 +559,42 @@ If something doesn't work:
    - Check Network tab to see if API calls are being made
    - Look at the request headers to see what origin is being sent
 
+### Issue: 500 Internal Server Error
+
+**Symptoms**: API requests return 500 error, registration/login fails with 500 status
+
+**Solutions**:
+1. **Check Backend Logs** (Most Important):
+   - Go to Railway dashboard → Backend service → "Logs" tab
+   - Look for error messages, especially:
+     - Database connection errors
+     - "Table doesn't exist" errors
+     - "Access denied" errors
+   - The logs will show the exact error causing the 500
+
+2. **Test Database Connection**:
+   - Visit: `https://your-backend-url.railway.app/api/health/db`
+   - If this returns an error, the database connection is the problem
+   - If this returns OK, the issue is likely with missing tables
+
+3. **Verify Database is Initialized**:
+   - The 500 error is often caused by missing database tables
+   - Follow Step 6 in this guide to initialize the database
+   - Run `backend/database.sql` to create all required tables
+
+4. **Check Database Environment Variables**:
+   - Backend service → Variables tab
+   - Verify all DB_* variables are set correctly
+   - They should use service references: `${{MySQL.MYSQLHOST}}` etc.
+   - Make sure the MySQL service name matches exactly
+
+5. **Common Causes**:
+   - **Database not initialized**: Tables don't exist → Run database.sql
+   - **Wrong database name**: DB_NAME doesn't match actual database
+   - **Connection refused**: DB_HOST or DB_PORT incorrect
+   - **Access denied**: DB_USER or DB_PASSWORD incorrect
+   - **Service references wrong**: MySQL service name doesn't match
+
 ### Issue: Database Connection Errors
 
 **Symptoms**: Backend logs show "ECONNREFUSED", "Access denied", or "Unknown database"
@@ -578,6 +618,10 @@ If something doesn't work:
    railway connect MySQL
    ```
    If this works, the issue is with backend configuration, not database
+
+5. **Test Database Health Endpoint**:
+   - Visit: `https://your-backend-url.railway.app/api/health/db`
+   - This will tell you if the database connection is working
 
 ### Issue: Frontend Shows Blank Page or 404
 

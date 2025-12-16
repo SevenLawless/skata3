@@ -195,6 +195,12 @@ Each service will have its own:
 2. Railway will attempt to build the frontend
 3. The build should complete, but the app won't work correctly until we set `REACT_APP_API_URL` in Step 5
 
+**Important**: If you encounter a build error about `package-lock.json` being out of sync:
+- Run `npm install` in the `frontend` directory locally
+- Commit the updated `package-lock.json` file
+- Push to your repository
+- Railway will automatically rebuild
+
 **Note**: The frontend service will get its own public URL (e.g., `https://frontend-production-xxxx.up.railway.app`). This is the URL users will visit.
 
 ---
@@ -616,11 +622,17 @@ If something doesn't work:
    - **"Out of memory"** → Frontend build needs more memory
      - Railway free tier has limits
      - Try optimizing build or upgrade plan
+   - **"npm ci can only install packages when your package.json and package-lock.json are in sync"** → Lock file mismatch
+     - **Solution**: Run `npm install` locally in the frontend directory to regenerate package-lock.json
+     - Commit the updated package-lock.json to your repository
+     - Push changes and redeploy
+     - The `nixpacks.toml` file should ensure `npm install` is used instead of `npm ci`
 
 3. **Verify Configuration**:
    - Root Directory is correct
    - Build Command is correct
    - Start Command is correct
+   - `nixpacks.toml` exists in the service directory (backend or frontend)
 
 ### Issue: Services Keep Restarting
 

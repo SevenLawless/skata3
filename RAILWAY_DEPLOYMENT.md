@@ -252,8 +252,9 @@ This is a **critical step**. Environment variables must be set correctly for all
    2. Go to **"Settings"** → **"Networking"**
    3. You'll see a **"Public Domain"** or **"Generate Domain"** button
    4. Click **"Generate Domain"** if no domain exists
-   5. Copy the URL (e.g., `https://frontend-production-xxxx.up.railway.app`)
+   5. Copy the **full URL** including `https://` (e.g., `https://frontend-production-xxxx.up.railway.app`)
    6. Use this exact URL (without trailing slash) for `FRONTEND_URL` and `CORS_ORIGIN`
+   7. **Important**: The URL must include `https://` protocol. The backend will auto-add it if missing, but it's better to include it explicitly.
 
 ### 5.2 Frontend Service Environment Variables
 
@@ -532,16 +533,27 @@ If something doesn't work:
 2. **Verify Backend CORS Configuration**:
    - Backend service → Variables → Check `FRONTEND_URL` and `CORS_ORIGIN`
    - Should match your frontend URL exactly (no trailing slash)
-   - Example: `https://frontend-production-xxxx.up.railway.app`
+   - **Must include `https://` protocol**: `https://frontend-production-xxxx.up.railway.app`
+   - Example: `https://skata3-production-1608.up.railway.app`
+   - **Common mistake**: Setting it to `skata3-production-1608.up.railway.app` (without https://)
+   - The backend code will auto-add `https://` if missing, but it's better to set it correctly
 
-3. **Rebuild Frontend**:
-   - After changing `REACT_APP_API_URL`, Railway should auto-rebuild
-   - If not, manually trigger: Frontend service → Deployments → Redeploy
+3. **Check CORS Error Details**:
+   - Open browser DevTools (F12) → Console tab
+   - Look for error: "The 'Access-Control-Allow-Origin' header contains the invalid value..."
+   - This means the CORS origin is set incorrectly (likely missing `https://`)
+   - Fix: Update `FRONTEND_URL` and `CORS_ORIGIN` to include `https://`
 
-4. **Check Browser Console**:
+4. **Rebuild Services**:
+   - After changing `REACT_APP_API_URL`, Railway should auto-rebuild frontend
+   - After changing `FRONTEND_URL` or `CORS_ORIGIN`, Railway should auto-rebuild backend
+   - If not, manually trigger: Service → Deployments → Redeploy
+
+5. **Check Browser Console**:
    - Open browser DevTools (F12)
    - Check Console tab for CORS errors
    - Check Network tab to see if API calls are being made
+   - Look at the request headers to see what origin is being sent
 
 ### Issue: Database Connection Errors
 

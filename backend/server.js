@@ -13,10 +13,28 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // CORS configuration - allow requests from frontend service
+const getCorsOrigin = () => {
+  const frontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN;
+  
+  if (!frontendUrl) {
+    return '*'; // Allow all origins in development
+  }
+  
+  // Ensure URL has protocol
+  if (frontendUrl.startsWith('http://') || frontendUrl.startsWith('https://')) {
+    return frontendUrl;
+  }
+  
+  // Add https:// if no protocol is present
+  return `https://${frontendUrl}`;
+};
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || process.env.CORS_ORIGIN || '*',
+  origin: getCorsOrigin(),
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 };
 
 // Middleware

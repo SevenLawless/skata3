@@ -92,15 +92,23 @@ app.listen(PORT, () => {
   const intervalMinutes = 5;
   setInterval(() => {
     checkAndRestoreRecurringItems().catch((err) => {
-      console.error('Recurring work item check failed:', err);
+      if (err.code === 'ER_NO_SUCH_TABLE') {
+        console.warn('Database tables not initialized. Skipping recurring items check.');
+      } else {
+        console.error('Recurring work item check failed:', err);
+      }
     });
   }, intervalMinutes * 60 * 1000);
 
-  // Run once shortly after startup as well
+  // Run once shortly after startup as well (with delay to allow DB connection)
   setTimeout(() => {
     checkAndRestoreRecurringItems().catch((err) => {
-      console.error('Initial recurring work item check failed:', err);
+      if (err.code === 'ER_NO_SUCH_TABLE') {
+        console.warn('Database tables not initialized yet. Please run database.sql to create tables.');
+      } else {
+        console.error('Initial recurring work item check failed:', err);
+      }
     });
-  }, 10 * 1000);
+  }, 30 * 1000); // Increased delay to 30 seconds to allow DB to be ready
 });
 

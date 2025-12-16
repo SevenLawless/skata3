@@ -363,19 +363,31 @@ Your database is empty and needs to be initialized with tables.
 
 1. Make sure you're in the project root directory (`skata2`)
 2. Run the database initialization script:
+   
+   **For Railway deployment** (recommended):
    ```bash
-   railway run --service MySQL mysql -h $MYSQLHOST -u $MYSQLUSER -p$MYSQLPASSWORD $MYSQLDATABASE < backend/database.sql
+   railway run --service MySQL mysql -h $MYSQLHOST -u $MYSQLUSER -p$MYSQLPASSWORD $MYSQLDATABASE < backend/database_railway.sql
    ```
    
-   **Alternative method** (if the above doesn't work):
+   **Alternative: Use original database.sql** (if you need to create the database):
+   ```bash
+   railway run --service MySQL mysql -h $MYSQLHOST -u $MYSQLUSER -p$MYSQLPASSWORD < backend/database.sql
+   ```
+   
+   **Alternative method** (interactive MySQL session):
    ```bash
    railway connect MySQL
    ```
    This opens an interactive MySQL session. Then:
    ```sql
-   source backend/database.sql;
+   source backend/database_railway.sql;
    ```
-   Or copy and paste the contents of `backend/database.sql` into the MySQL prompt.
+   Or copy and paste the contents of `backend/database_railway.sql` into the MySQL prompt.
+   
+   **Important**: 
+   - Use `database_railway.sql` for Railway (it doesn't try to create/use a specific database)
+   - Railway's MySQL service already has a database created (check `MYSQLDATABASE` variable)
+   - The script will create tables in the existing Railway database
 
 3. Verify tables were created:
    ```bash
@@ -409,7 +421,8 @@ Your database is empty and needs to be initialized with tables.
 
 #### 6.3 Run SQL Scripts
 
-1. Open the file `backend/database.sql` in a text editor
+1. **For Railway**: Open the file `backend/database_railway.sql` in a text editor
+   - **OR** Open `backend/database.sql` and remove the first 3 lines (`CREATE DATABASE`, `USE` statements)
 2. Copy the entire contents
 3. In your MySQL client, paste and execute the SQL
 4. Verify tables were created:
@@ -417,6 +430,8 @@ Your database is empty and needs to be initialized with tables.
    SHOW TABLES;
    ```
    You should see: `users`, `work_items`, `activity_logs`
+   
+   **Important**: Railway's MySQL service already has a database. Don't try to create a new one - just create the tables in the existing database (specified by `MYSQLDATABASE` variable).
 
 #### 6.4 Run Migration Scripts (if needed)
 
@@ -434,7 +449,7 @@ Some Railway plans provide a web-based database interface:
 1. Click on your **MySQL service**
 2. Look for **"Data"**, **"Connect"**, or **"Query"** tab
 3. If available, you can run SQL directly in the web interface
-4. Copy and paste contents of `backend/database.sql`
+4. Copy and paste contents of `backend/database_railway.sql` (or `backend/database.sql` without the first 3 lines)
 5. Execute the SQL
 
 ---

@@ -89,7 +89,7 @@ const EditableCell = ({
       window.removeEventListener('scroll', handleReposition, true);
       window.removeEventListener('resize', handleReposition);
     };
-  }, [isEditing]);
+  }, [isEditing, cellRef]);
 
   useEffect(() => {
     const cellElement = cellRef?.current;
@@ -135,7 +135,7 @@ const EditableCell = ({
         document.removeEventListener('keydown', handleEscape);
       };
     }
-  }, [isEditing, onCancel]);
+  }, [isEditing, onCancel, cellRef]);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

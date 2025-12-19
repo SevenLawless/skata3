@@ -24,38 +24,63 @@ const formatDateString = (date) => date.toISOString().split('T')[0];
 const getWeekStart = (date) => {
   const result = new Date(date);
   const day = result.getUTCDay();
-  const offset = (day + 6) % 7;
+  const offset = day === 0 ? 6 : day - 1;
   result.setUTCDate(result.getUTCDate() - offset);
+  result.setUTCHours(0, 0, 0, 0);
   return result;
+};
+
+const getWeekEnd = (startDate) => {
+  const end = new Date(startDate);
+  end.setUTCDate(end.getUTCDate() + 6);
+  end.setUTCHours(23, 59, 59, 999);
+  return end;
 };
 
 const getMonthStart = (date) => {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
 };
 
+const getMonthEnd = (startDate) => {
+  const end = new Date(startDate);
+  end.setUTCMonth(end.getUTCMonth() + 1);
+  end.setUTCDate(0);
+  end.setUTCHours(23, 59, 59, 999);
+  return end;
+};
+
 const buildRange = (period, from, to) => {
   const now = new Date();
-  const endDate = to ? new Date(to) : now;
+  let endDate = to ? new Date(to) : now;
   if (Number.isNaN(endDate.getTime())) {
     throw new Error('Invalid to-date');
   }
 
-  let startDate = null;
-
-  if (period === 'month') {
-    startDate = getMonthStart(endDate);
-  } else if (period === 'custom') {
-    if (!from) {
-      throw new Error('Custom range requires a start date');
-    }
-    startDate = new Date(from);
-    if (Number.isNaN(startDate.getTime())) {
-      throw new Error('Invalid from-date');
-    }
-  } else {
-    startDate = getWeekStart(endDate);
+  if (period === 'week') {
+    const startDate = getWeekStart(endDate);
+    endDate = getWeekEnd(startDate);
+    return {
+      from: formatDateString(startDate),
+      to: formatDateString(endDate)
+    };
   }
 
+  if (period === 'month') {
+    const startDate = getMonthStart(endDate);
+    endDate = getMonthEnd(startDate);
+    return {
+      from: formatDateString(startDate),
+      to: formatDateString(endDate)
+    };
+  }
+
+  if (!from) {
+    throw new Error('Custom range requires a start date');
+  }
+  const startDate = new Date(from);
+  if (Number.isNaN(startDate.getTime())) {
+    throw new Error('Invalid from-date');
+  }
   if (startDate > endDate) {
     throw new Error('From date must be before to date');
   }

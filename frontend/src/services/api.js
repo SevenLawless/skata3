@@ -64,7 +64,7 @@ export const statsAPI = {
 };
 
 export const checkInsAPI = {
-  list: () => api.get('/check-ins'),
+  list: (params) => api.get('/check-ins', { params }),
   create: (data) => api.post('/check-ins', data)
 };
 

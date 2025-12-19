@@ -8,6 +8,17 @@ const formatTime = (value) => {
   return value.slice(0, 5);
 };
 
+const formatDate = (value) => {
+  if (!value) return '-';
+  return value.split('T')[0];
+};
+
+const periodOptions = [
+  { id: 'week', label: 'This Week' },
+  { id: 'month', label: 'This Month' },
+  { id: 'custom', label: 'Custom Range' }
+];
+
 const CheckIn = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -27,20 +38,30 @@ const CheckIn = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [period, setPeriod] = useState('week');
+  const [customFrom, setCustomFrom] = useState(today);
+  const [customTo, setCustomTo] = useState(today);
+  const [summary, setSummary] = useState(null);
 
   const fetchEntries = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await checkInsAPI.list();
+      const params = { period, limit: 100 };
+      if (period === 'custom') {
+        params.from = customFrom;
+        params.to = customTo;
+      }
+      const res = await checkInsAPI.list(params);
       setEntries(res.data.entries || []);
+      setSummary(res.data.summary || null);
       setError('');
     } catch (err) {
       console.error('Failed to load check-ins', err);
-      setError('Failed to load check-ins');
+      setError(err.response?.data?.error || 'Failed to load check-ins');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [period, customFrom, customTo]);
 
   useEffect(() => {
     fetchEntries();
@@ -126,6 +147,17 @@ const CheckIn = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+  const handlePeriodChange = (value) => {
+    setPeriod(value);
+    setError('');
+    setSuccess('');
+  };
+  const handleCustomRangeChange = (field) => (event) => {
+    const setter = field === 'from' ? setCustomFrom : setCustomTo;
+    setter(event.target.value);
+    setError('');
+    setSuccess('');
   };
 
   return (
@@ -247,10 +279,63 @@ const CheckIn = () => {
           </section>
 
           <section className="check-in-table-card">
+            <div className="check-in-period-selector">
+              {periodOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`period-btn ${period === option.id ? 'active' : ''}`}
+                  onClick={() => handlePeriodChange(option.id)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {period === 'custom' && (
+              <div className="custom-range-inputs">
+                <div className="form-group">
+                  <label htmlFor="custom-from">From</label>
+                  <input
+                    type="date"
+                    id="custom-from"
+                    value={customFrom}
+                    max={customTo}
+                    onChange={handleCustomRangeChange('from')}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="custom-to">To</label>
+                  <input
+                    type="date"
+                    id="custom-to"
+                    value={customTo}
+                    min={customFrom}
+                    onChange={handleCustomRangeChange('to')}
+                  />
+                </div>
+              </div>
+            )}
             <div className="check-in-table-header">
               <h2>Your Check-Ins</h2>
-              <span className="check-in-summary">{totalHours.toFixed(2)} total logged hrs</span>
+              <span className="check-in-summary">
+                {summary
+                  ? `${Number(summary.totalHours).toFixed(2)} hrs (${summary.label})`
+                  : `${totalHours.toFixed(2)} total logged hrs`}
+              </span>
             </div>
+            {summary && (
+              <div className="check-in-period-summary">
+                <div>
+                  <strong>{summary.label}</strong>
+                  <p>
+                    {summary.from} → {summary.to}
+                  </p>
+                </div>
+                <div className="check-in-period-summary-value">
+                  {Number(summary.totalHours).toFixed(2)} hrs
+                </div>
+              </div>
+            )}
             {loading ? (
               <p>Loading entries...</p>
             ) : entries.length === 0 ? (
@@ -270,7 +355,7 @@ const CheckIn = () => {
                   <tbody>
                     {entries.map((entry) => (
                       <tr key={entry.id}>
-                        <td>{entry.check_in_date}</td>
+                        <td>{formatDate(entry.check_in_date)}</td>
                         <td>{formatTime(entry.start_time)}</td>
                         <td>{formatTime(entry.end_time)}</td>
                         <td>{Number(entry.hours).toFixed(2)}</td>

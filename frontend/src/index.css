@@ -957,6 +957,35 @@ code {
   gap: 10px;
   margin-bottom: 12px;
 }
+.check-in-period-selector {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.period-btn {
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.period-btn.active {
+  background: #4f46e5;
+  color: white;
+  border-color: #4f46e5;
+}
+.custom-range-inputs {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.custom-range-inputs .form-group {
+  flex: 1 1 180px;
+}
 
 .check-in-summary {
   font-size: 14px;

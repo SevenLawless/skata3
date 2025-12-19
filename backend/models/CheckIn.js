@@ -28,17 +28,57 @@ const CheckIn = {
     return rows[0];
   },
 
-  async findByUser(userId, limit = 100) {
+  async findByUserRange(userId, { from, to, limit = 100 }) {
     const safeLimit = Math.max(1, Math.min(Number(limit) || 100, 500));
+    const conditions = ['ci.user_id = ?'];
+    const params = [userId];
+
+    if (from) {
+      conditions.push('ci.check_in_date >= ?');
+      params.push(from);
+    }
+    if (to) {
+      conditions.push('ci.check_in_date <= ?');
+      params.push(to);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
     const [rows] = await pool.execute(
       `SELECT ci.*
        FROM check_ins ci
-       WHERE ci.user_id = ?
+       WHERE ${whereClause}
        ORDER BY ci.check_in_date DESC, ci.created_at DESC
        LIMIT ${safeLimit}`,
-      [userId]
+      params
     );
+
     return rows;
+  },
+
+  async sumHoursByRange(userId, { from, to }) {
+    const conditions = ['ci.user_id = ?'];
+    const params = [userId];
+
+    if (from) {
+      conditions.push('ci.check_in_date >= ?');
+      params.push(from);
+    }
+    if (to) {
+      conditions.push('ci.check_in_date <= ?');
+      params.push(to);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    const [rows] = await pool.execute(
+      `SELECT COALESCE(SUM(ci.hours), 0) as total
+       FROM check_ins ci
+       WHERE ${whereClause}`,
+      params
+    );
+
+    return Number(rows[0]?.total || 0);
   }
 };
 

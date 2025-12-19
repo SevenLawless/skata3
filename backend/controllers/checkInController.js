@@ -19,13 +19,95 @@ const calculateHoursFromTimes = (checkInDate, startTime, endTime) => {
   return Number(diffHours.toFixed(2));
 };
 
+const formatDateString = (date) => date.toISOString().split('T')[0];
+
+const getWeekStart = (date) => {
+  const result = new Date(date);
+  const day = result.getUTCDay();
+  const offset = (day + 6) % 7;
+  result.setUTCDate(result.getUTCDate() - offset);
+  return result;
+};
+
+const getMonthStart = (date) => {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+};
+
+const buildRange = (period, from, to) => {
+  const now = new Date();
+  const endDate = to ? new Date(to) : now;
+  if (Number.isNaN(endDate.getTime())) {
+    throw new Error('Invalid to-date');
+  }
+
+  let startDate = null;
+
+  if (period === 'month') {
+    startDate = getMonthStart(endDate);
+  } else if (period === 'custom') {
+    if (!from) {
+      throw new Error('Custom range requires a start date');
+    }
+    startDate = new Date(from);
+    if (Number.isNaN(startDate.getTime())) {
+      throw new Error('Invalid from-date');
+    }
+  } else {
+    startDate = getWeekStart(endDate);
+  }
+
+  if (startDate > endDate) {
+    throw new Error('From date must be before to date');
+  }
+
+  return {
+    from: formatDateString(startDate),
+    to: formatDateString(endDate)
+  };
+};
+
+const buildSummaryLabel = (period, range) => {
+  if (!range) return 'Recent';
+  if (period === 'week') {
+    return `Week of ${range.from}`;
+  }
+  if (period === 'month') {
+    return `Month of ${range.from.slice(0, 7)}`;
+  }
+  return `Custom: ${range.from} → ${range.to}`;
+};
+
 const listCheckIns = async (req, res) => {
   try {
-    const entries = await CheckIn.findByUser(req.userId);
-    res.json({ entries });
+    const period = ['week', 'month', 'custom'].includes(req.query.period)
+      ? req.query.period
+      : 'week';
+    const limit = Number(req.query.limit) || 100;
+    const range = buildRange(period, req.query.from, req.query.to);
+
+    const entries = await CheckIn.findByUserRange(req.userId, {
+      from: range.from,
+      to: range.to,
+      limit
+    });
+    const totalHours = await CheckIn.sumHoursByRange(req.userId, {
+      from: range.from,
+      to: range.to
+    });
+
+    res.json({
+      entries,
+      summary: {
+        period,
+        label: buildSummaryLabel(period, range),
+        from: range.from,
+        to: range.to,
+        totalHours: Number(totalHours.toFixed(2))
+      }
+    });
   } catch (error) {
-    console.error('List check-ins error:', error);
-    res.status(500).json({ error: 'Failed to load check-ins' });
+    console.error('List check-ins error:', error.message);
+    res.status(400).json({ error: error.message || 'Failed to load check-ins' });
   }
 };
 

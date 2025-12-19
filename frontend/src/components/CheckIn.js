@@ -42,6 +42,7 @@ const CheckIn = () => {
   const [customFrom, setCustomFrom] = useState(today);
   const [customTo, setCustomTo] = useState(today);
   const [summary, setSummary] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchEntries = useCallback(async () => {
     try {
@@ -147,6 +148,27 @@ const CheckIn = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+  
+  const handleDelete = async (entryId) => {
+    if (!window.confirm('Delete this check-in entry? This cannot be undone.')) {
+      return;
+    }
+
+    setError('');
+    setSuccess('');
+    setDeletingId(entryId);
+
+    try {
+      await checkInsAPI.remove(entryId);
+      setSuccess('Check-in entry deleted.');
+      fetchEntries();
+    } catch (err) {
+      console.error('Failed to delete check-in', err);
+      setError(err.response?.data?.error || 'Failed to delete check-in');
+    } finally {
+      setDeletingId(null);
+    }
   };
   const handlePeriodChange = (value) => {
     setPeriod(value);
@@ -349,7 +371,8 @@ const CheckIn = () => {
                       <th>Start</th>
                       <th>End</th>
                       <th>Hours</th>
-                      <th>Notes</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -359,7 +382,17 @@ const CheckIn = () => {
                         <td>{formatTime(entry.start_time)}</td>
                         <td>{formatTime(entry.end_time)}</td>
                         <td>{Number(entry.hours).toFixed(2)}</td>
-                        <td>{entry.notes || '-'}</td>
+                    <td>{entry.notes || '-'}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline"
+                        onClick={() => handleDelete(entry.id)}
+                        disabled={deletingId === entry.id}
+                      >
+                        {deletingId === entry.id ? 'Deleting…' : 'Delete'}
+                      </button>
+                    </td>
                       </tr>
                     ))}
                   </tbody>

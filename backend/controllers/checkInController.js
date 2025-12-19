@@ -102,6 +102,21 @@ const buildSummaryLabel = (period, range) => {
   return `Custom: ${range.from} → ${range.to}`;
 };
 
+const deleteCheckIn = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const entry = await CheckIn.findById(id);
+    if (!entry || entry.user_id !== req.userId) {
+      return res.status(404).json({ error: 'Check-in not found' });
+    }
+    await CheckIn.delete(id);
+    res.status(204).send();
+  } catch (error) {
+    console.error('Delete check-in error:', error);
+    res.status(500).json({ error: 'Failed to delete check-in' });
+  }
+};
+
 const listCheckIns = async (req, res) => {
   try {
     const period = ['week', 'month', 'custom'].includes(req.query.period)
@@ -181,6 +196,7 @@ const createCheckIn = async (req, res) => {
 
 module.exports = {
   listCheckIns,
-  createCheckIn
+  createCheckIn,
+  deleteCheckIn
 };
 

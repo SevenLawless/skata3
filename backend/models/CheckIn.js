@@ -79,6 +79,11 @@ const CheckIn = {
     );
 
     return Number(rows[0]?.total || 0);
+  },
+
+  async delete(id) {
+    const [result] = await pool.execute('DELETE FROM check_ins WHERE id = ?', [id]);
+    return result.affectedRows > 0;
   }
 };
 

@@ -65,7 +65,8 @@ export const statsAPI = {
 
 export const checkInsAPI = {
   list: (params) => api.get('/check-ins', { params }),
-  create: (data) => api.post('/check-ins', data)
+  create: (data) => api.post('/check-ins', data),
+  remove: (id) => api.delete(`/check-ins/${id}`)
 };
 
 export default api;

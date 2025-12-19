@@ -22,11 +22,6 @@ const WorkList = () => {
   const location = useLocation();
   const getNavClass = (path) => (location.pathname === path ? 'nav-link active' : 'nav-link');
 
-  useEffect(() => {
-    fetchWorkItems();
-    fetchUsers();
-  }, [fetchWorkItems, fetchUsers]);
-
   const fetchUsers = useCallback(async () => {
     try {
       const response = await usersAPI.getAll();
@@ -48,6 +43,11 @@ const WorkList = () => {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchWorkItems();
+    fetchUsers();
+  }, [fetchWorkItems, fetchUsers]);
 
   useEffect(() => {
     const intervalId = setInterval(() => {

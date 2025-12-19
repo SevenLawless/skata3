@@ -35,8 +35,8 @@ const CheckIn = {
        FROM check_ins ci
        WHERE ci.user_id = ?
        ORDER BY ci.check_in_date DESC, ci.created_at DESC
-       LIMIT ?`,
-      [userId, safeLimit]
+       LIMIT ${safeLimit}`,
+      [userId]
     );
     return rows;
   }

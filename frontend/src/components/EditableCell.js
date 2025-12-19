@@ -162,6 +162,8 @@ const EditableCell = ({
       processedValue = inputValue.trim() || null;
     } else if (fieldType === 'source') {
       processedValue = inputValue || 'other';
+    } else if (fieldType === 'status') {
+      processedValue = inputValue || 'pending';
     }
 
     onSave(processedValue);
@@ -233,6 +235,23 @@ const EditableCell = ({
             rows="3"
             className="field-popover-textarea"
           />
+        );
+
+      case 'status':
+        return (
+          <select
+            ref={inputRef}
+            value={inputValue || 'pending'}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="field-popover-select"
+          >
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
         );
 
       default:

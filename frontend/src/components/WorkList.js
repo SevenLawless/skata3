@@ -135,6 +135,12 @@ const WorkList = () => {
         updateData.video_count = newValue;
       } else if (fieldType === 'description') {
         updateData.description = newValue;
+      } else if (fieldType === 'status') {
+        updateData.status = newValue || 'pending';
+      }
+
+      if (fieldType !== 'status' && currentItem.status === 'pending') {
+        updateData.status = 'in_progress';
       }
 
       await workItemsAPI.update(itemId, updateData);
@@ -201,6 +207,8 @@ const WorkList = () => {
       fieldValue = item.assigned_user_id ? String(item.assigned_user_id) : '';
     } else if (fieldType === 'source') {
       fieldValue = item.source || 'other';
+    } else if (fieldType === 'status') {
+      fieldValue = item.status || 'pending';
     } else if (fieldType === 'videos') {
       fieldValue = item.video_count !== null ? String(item.video_count) : '';
     } else if (fieldType === 'description') {
@@ -335,11 +343,14 @@ const WorkList = () => {
                             {truncateText(item.link, 40)}
                           </a>
                         </td>
-                        <td>
+                        {renderEditableCell(
+                          item,
+                          'status',
+                          item.status,
                           <span className={`status-badge status-${item.status}`}>
                             {item.status.replace('_', ' ')}
                           </span>
-                        </td>
+                        )}
                         {renderEditableCell(
                           item,
                           'videos',

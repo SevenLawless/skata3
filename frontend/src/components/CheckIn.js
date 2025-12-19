@@ -40,7 +40,7 @@ const CheckIn = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchEntries();

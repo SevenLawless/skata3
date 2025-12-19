@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { workItemsAPI, usersAPI } from '../services/api';
 import WorkItemForm from './WorkItemForm';
@@ -19,22 +19,24 @@ const WorkList = () => {
   const cellRefs = useRef({}); // Store refs for each editable cell
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const getNavClass = (path) => (location.pathname === path ? 'nav-link active' : 'nav-link');
 
   useEffect(() => {
     fetchWorkItems();
     fetchUsers();
-  }, []);
+  }, [fetchWorkItems, fetchUsers]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await usersAPI.getAll();
       setUsers(response.data || []);
     } catch (err) {
       console.error('Failed to load users', err);
     }
-  };
+  }, []);
 
-  const fetchWorkItems = async () => {
+  const fetchWorkItems = useCallback(async () => {
     try {
       const response = await workItemsAPI.getAll();
       setItems(response.data);
@@ -45,7 +47,14 @@ const WorkList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      fetchWorkItems();
+    }, 60000);
+    return () => clearInterval(intervalId);
+  }, [fetchWorkItems]);
 
   const handleCreate = () => {
     setEditingItem(null);
@@ -244,6 +253,16 @@ const WorkList = () => {
     );
   };
 
+  const renderStatusCell = (item) =>
+    renderEditableCell(
+      item,
+      'status',
+      item.status,
+      <span className={`status-badge status-${item.status}`}>
+        {item.status.replace('_', ' ')}
+      </span>
+    );
+
   const truncateText = (text, maxLength = 50) => {
     if (!text) return '';
     if (text.length <= maxLength) return text;
@@ -268,8 +287,15 @@ const WorkList = () => {
         <div className="header-left">
           <h1 className="logo">WorkHub</h1>
           <nav className="header-nav">
-            <button className="nav-link" onClick={() => navigate('/dashboard')}>Dashboard</button>
-            <button className="nav-link active">Work Items</button>
+            <button className={getNavClass('/dashboard')} onClick={() => navigate('/dashboard')}>
+              Dashboard
+            </button>
+            <button className={getNavClass('/work-list')} onClick={() => navigate('/work-list')}>
+              Work Items
+            </button>
+            <button className={getNavClass('/check-in')} onClick={() => navigate('/check-in')}>
+              Check-In
+            </button>
           </nav>
         </div>
         <div className="header-right">
@@ -343,14 +369,7 @@ const WorkList = () => {
                             {truncateText(item.link, 40)}
                           </a>
                         </td>
-                        {renderEditableCell(
-                          item,
-                          'status',
-                          item.status,
-                          <span className={`status-badge status-${item.status}`}>
-                            {item.status.replace('_', ' ')}
-                          </span>
-                        )}
+                        {renderStatusCell(item)}
                         {renderEditableCell(
                           item,
                           'videos',
@@ -419,11 +438,7 @@ const WorkList = () => {
                             {truncateText(item.link, 40)}
                           </a>
                         </td>
-                        <td>
-                          <span className={`status-badge status-${item.status}`}>
-                            {item.status.replace('_', ' ')}
-                          </span>
-                        </td>
+                        {renderStatusCell(item)}
                         {renderEditableCell(
                           item,
                           'videos',
@@ -492,11 +507,7 @@ const WorkList = () => {
                             {truncateText(item.link, 40)}
                           </a>
                         </td>
-                        <td>
-                          <span className={`status-badge status-${item.status}`}>
-                            {item.status.replace('_', ' ')}
-                          </span>
-                        </td>
+                        {renderStatusCell(item)}
                         {renderEditableCell(
                           item,
                           'videos',

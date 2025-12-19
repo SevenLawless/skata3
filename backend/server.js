@@ -7,6 +7,7 @@ const workItemRoutes = require('./routes/workItemRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const userRoutes = require('./routes/userRoutes');
+const checkInRoutes = require('./routes/checkInRoutes');
 const { checkAndRestoreRecurringItems } = require('./utils/recurringWorkItems');
 
 const app = express();
@@ -48,6 +49,7 @@ app.use('/api/work-items', workItemRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/check-ins', checkInRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

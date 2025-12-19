@@ -913,6 +913,96 @@ code {
   font-weight: 500;
 }
 
+.success-banner {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  border: 1px solid #6ee7b7;
+  color: #065f46;
+  padding: 16px 24px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.check-in-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(380px, 2fr);
+  gap: 24px;
+}
+
+.check-in-form-card,
+.check-in-table-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
+}
+
+.check-in-form-card h2,
+.check-in-table-card h2 {
+  font-size: 24px;
+  margin-bottom: 18px;
+  color: #111827;
+}
+
+.check-in-hint {
+  font-size: 14px;
+  margin-bottom: 16px;
+  color: #1d4ed8;
+}
+
+.check-in-table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.check-in-summary {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4c1d95;
+}
+
+.check-in-table-wrapper {
+  overflow-x: auto;
+}
+
+.check-in-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.check-in-table th,
+.check-in-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px 8px;
+  text-align: left;
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.check-in-table th {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.check-in-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.check-in-table td:nth-child(4) {
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .check-in-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Activity Section */
 .activity-section {
   background: white;

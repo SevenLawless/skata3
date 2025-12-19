@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { statsAPI, usersAPI, dashboardAPI } from '../services/api';
 
@@ -17,6 +17,8 @@ const Statistics = () => {
   });
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const getNavClass = (path) => (location.pathname === path ? 'nav-link active' : 'nav-link');
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -186,8 +188,15 @@ const Statistics = () => {
         <div className="header-left">
           <h1 className="logo">WorkHub</h1>
           <nav className="header-nav">
-            <button className="nav-link active">Dashboard</button>
-            <button className="nav-link" onClick={() => navigate('/work-list')}>Work Items</button>
+            <button className={getNavClass('/dashboard')} onClick={() => navigate('/dashboard')}>
+              Dashboard
+            </button>
+            <button className={getNavClass('/work-list')} onClick={() => navigate('/work-list')}>
+              Work Items
+            </button>
+            <button className={getNavClass('/check-in')} onClick={() => navigate('/check-in')}>
+              Check-In
+            </button>
           </nav>
         </div>
         <div className="header-right">

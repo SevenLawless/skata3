@@ -1,0 +1,292 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { checkInsAPI } from '../services/api';
+
+const formatTime = (value) => {
+  if (!value) return '-';
+  return value.slice(0, 5);
+};
+
+const CheckIn = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const getNavClass = (path) => (location.pathname === path ? 'nav-link active' : 'nav-link');
+
+  const today = new Date().toISOString().split('T')[0];
+  const [form, setForm] = useState({
+    date: today,
+    startTime: '',
+    endTime: '',
+    hours: '',
+    notes: ''
+  });
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const fetchEntries = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await checkInsAPI.list();
+      setEntries(res.data.entries || []);
+      setError('');
+    } catch (err) {
+      console.error('Failed to load check-ins', err);
+      setError('Failed to load check-ins');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
+
+  const derivedHours = useMemo(() => {
+    if (!form.startTime || !form.endTime) return null;
+    const day = form.date || today;
+    const start = new Date(`${day}T${form.startTime}`);
+    let end = new Date(`${day}T${form.endTime}`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return null;
+    }
+
+    let diff = (end - start) / 3600000;
+    if (diff <= 0) {
+      end = new Date(end);
+      end.setDate(end.getDate() + 1);
+      diff = (end - start) / 3600000;
+    }
+
+    return Number(diff.toFixed(2));
+  }, [form.date, form.startTime, form.endTime, today]);
+
+  const totalHours = useMemo(
+    () =>
+      entries.reduce((sum, entry) => {
+        const value = Number(entry.hours) || 0;
+        return sum + value;
+      }, 0),
+    [entries]
+  );
+
+  const handleChange = (field) => (event) => {
+    setForm((prev) => ({ ...prev, [field]: event.target.value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
+    setSuccess('');
+
+    let parsedHours = form.hours ? parseFloat(form.hours) : null;
+    if (Number.isNaN(parsedHours)) {
+      parsedHours = null;
+    }
+
+    if (!parsedHours) {
+      parsedHours = derivedHours;
+    }
+
+    if (!parsedHours || parsedHours <= 0) {
+      setError('Provide total hours or a valid start and end time.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await checkInsAPI.create({
+        date: form.date,
+        start_time: form.startTime || null,
+        end_time: form.endTime || null,
+        hours: Number(parsedHours.toFixed(2)),
+        notes: form.notes.trim() || null
+      });
+      setSuccess('Check-in logged successfully.');
+      setForm((prev) => ({
+        ...prev,
+        startTime: '',
+        endTime: '',
+        hours: '',
+        notes: ''
+      }));
+      fetchEntries();
+    } catch (err) {
+      console.error('Failed to save check-in', err);
+      setError(err.response?.data?.error || 'Failed to save check-in');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  return (
+    <div className="stats-page">
+      <header className="stats-header">
+        <div className="header-left">
+          <h1 className="logo">WorkHub</h1>
+          <nav className="header-nav">
+            <button className={getNavClass('/dashboard')} onClick={() => navigate('/dashboard')}>
+              Dashboard
+            </button>
+            <button className={getNavClass('/work-list')} onClick={() => navigate('/work-list')}>
+              Work Items
+            </button>
+            <button className={getNavClass('/check-in')} onClick={() => navigate('/check-in')}>
+              Check-In
+            </button>
+          </nav>
+        </div>
+        <div className="header-right">
+          <div className="user-info">
+            <div className="user-avatar">{user?.username?.charAt(0).toUpperCase()}</div>
+            <span className="user-name">{user?.username}</span>
+          </div>
+          <button onClick={handleLogout} className="logout-btn">
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <main className="stats-main">
+        <div className="check-in-grid">
+          <section className="check-in-form-card">
+            <h2>Clock-In</h2>
+            {error && <div className="error-banner">{error}</div>}
+            {success && <div className="success-banner">{success}</div>}
+            <form onSubmit={handleSubmit}>
+              <div className="form-group">
+                <label htmlFor="checkin-date">Date</label>
+                <input
+                  type="date"
+                  id="checkin-date"
+                  value={form.date}
+                  onChange={handleChange('date')}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="start-time">Start Time</label>
+                <input
+                  type="time"
+                  id="start-time"
+                  value={form.startTime}
+                  onChange={handleChange('startTime')}
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="end-time">End Time</label>
+                <input
+                  type="time"
+                  id="end-time"
+                  value={form.endTime}
+                  onChange={handleChange('endTime')}
+                />
+              </div>
+
+              {derivedHours && !form.hours && (
+                <p className="check-in-hint">Derived hours: {derivedHours}h from start/end</p>
+              )}
+
+              <div className="form-group">
+                <label htmlFor="hours">Total Hours</label>
+                <input
+                  type="number"
+                  step="0.25"
+                  min="0"
+                  id="hours"
+                  value={form.hours}
+                  onChange={handleChange('hours')}
+                  placeholder="Use if you prefer to type hours"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="notes">Notes</label>
+                <textarea
+                  id="notes"
+                  value={form.notes}
+                  onChange={handleChange('notes')}
+                  rows="3"
+                  placeholder="Optional note about the session"
+                />
+              </div>
+
+              <div className="form-actions">
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Saving...' : 'Log Hours'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      startTime: '',
+                      endTime: '',
+                      hours: '',
+                      notes: ''
+                    }))
+                  }
+                  disabled={saving}
+                >
+                  Reset
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <section className="check-in-table-card">
+            <div className="check-in-table-header">
+              <h2>Your Check-Ins</h2>
+              <span className="check-in-summary">{totalHours.toFixed(2)} total logged hrs</span>
+            </div>
+            {loading ? (
+              <p>Loading entries...</p>
+            ) : entries.length === 0 ? (
+              <p>No check-ins yet. Log your hours to get started.</p>
+            ) : (
+              <div className="check-in-table-wrapper">
+                <table className="check-in-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Start</th>
+                      <th>End</th>
+                      <th>Hours</th>
+                      <th>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {entries.map((entry) => (
+                      <tr key={entry.id}>
+                        <td>{entry.check_in_date}</td>
+                        <td>{formatTime(entry.start_time)}</td>
+                        <td>{formatTime(entry.end_time)}</td>
+                        <td>{Number(entry.hours).toFixed(2)}</td>
+                        <td>{entry.notes || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default CheckIn;
+

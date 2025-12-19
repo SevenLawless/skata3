@@ -5,6 +5,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import WorkList from './components/WorkList';
 import Statistics from './components/Statistics';
+import CheckIn from './components/CheckIn';
 import './index.css';
 
 const PrivateRoute = ({ children }) => {
@@ -37,6 +38,14 @@ function App() {
             element={
               <PrivateRoute>
                 <WorkList />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/check-in"
+            element={
+              <PrivateRoute>
+                <CheckIn />
               </PrivateRoute>
             }
           />

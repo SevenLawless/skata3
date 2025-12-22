@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import { adminAPI } from '../services/api';
 
 const formatDate = (value) => {
@@ -19,7 +18,6 @@ const formatDateTime = (value) => {
 };
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -32,13 +30,30 @@ const AdminDashboard = () => {
   const [customTo, setCustomTo] = useState('');
   const [error, setError] = useState('');
 
-  const today = new Date().toISOString().split('T')[0];
+  const fetchUsersData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const params = { period };
+      if (period === 'custom') {
+        if (customFrom) params.from = customFrom;
+        if (customTo) params.to = customTo;
+      }
+      const res = await adminAPI.getAllUsersData(params);
+      setUsersData(res.data);
+    } catch (err) {
+      console.error('Failed to load users data', err);
+      setError(err.response?.data?.error || 'Failed to load users data');
+    } finally {
+      setLoading(false);
+    }
+  }, [period, customFrom, customTo]);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchUsersData();
     }
-  }, [isAuthenticated, period, customFrom, customTo]);
+  }, [isAuthenticated, fetchUsersData]);
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
@@ -58,24 +73,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const fetchUsersData = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const params = { period };
-      if (period === 'custom') {
-        if (customFrom) params.from = customFrom;
-        if (customTo) params.to = customTo;
-      }
-      const res = await adminAPI.getAllUsersData(params);
-      setUsersData(res.data);
-    } catch (err) {
-      console.error('Failed to load users data', err);
-      setError(err.response?.data?.error || 'Failed to load users data');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchUserDetails = async (userId) => {
     try {

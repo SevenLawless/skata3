@@ -158,7 +158,8 @@ const createCheckIn = async (req, res) => {
       start_time: startTime,
       end_time: endTime,
       hours: hoursInput,
-      notes
+      notes,
+      video_count: videoCountInput
     } = req.body;
 
     const checkInDate = date || new Date().toISOString().split('T')[0];
@@ -177,6 +178,17 @@ const createCheckIn = async (req, res) => {
       });
     }
 
+    // Validate video_count
+    let parsedVideoCount = null;
+    if (videoCountInput !== undefined && videoCountInput !== null && videoCountInput !== '') {
+      parsedVideoCount = parseInt(videoCountInput, 10);
+      if (isNaN(parsedVideoCount) || parsedVideoCount < 0) {
+        return res.status(400).json({
+          error: 'Video count must be a non-negative integer'
+        });
+      }
+    }
+
     const trimmedNotes = notes ? notes.toString().trim() : '';
     const entry = await CheckIn.create({
       userId: req.userId,
@@ -184,7 +196,8 @@ const createCheckIn = async (req, res) => {
       startTime: startTime || null,
       endTime: endTime || null,
       hours: parsedHours,
-      notes: trimmedNotes || null
+      notes: trimmedNotes || null,
+      videoCount: parsedVideoCount
     });
 
     res.status(201).json(entry);
@@ -202,7 +215,8 @@ const updateCheckIn = async (req, res) => {
       start_time: startTime,
       end_time: endTime,
       hours: hoursInput,
-      notes
+      notes,
+      video_count: videoCountInput
     } = req.body;
 
     // Verify the check-in exists and belongs to the user
@@ -236,6 +250,23 @@ const updateCheckIn = async (req, res) => {
       });
     }
 
+    // Validate and parse video_count
+    let parsedVideoCount = null;
+    if (videoCountInput !== undefined) {
+      if (videoCountInput === null || videoCountInput === '') {
+        parsedVideoCount = null;
+      } else {
+        parsedVideoCount = parseInt(videoCountInput, 10);
+        if (isNaN(parsedVideoCount) || parsedVideoCount < 0) {
+          return res.status(400).json({
+            error: 'Video count must be a non-negative integer'
+          });
+        }
+      }
+    } else {
+      parsedVideoCount = existingEntry.video_count;
+    }
+
     const trimmedNotes = notes !== undefined 
       ? (notes ? notes.toString().trim() : null)
       : existingEntry.notes;
@@ -245,7 +276,8 @@ const updateCheckIn = async (req, res) => {
       startTime: startTime !== undefined ? (startTime || null) : existingEntry.start_time,
       endTime: endTime !== undefined ? (endTime || null) : existingEntry.end_time,
       hours: parsedHours,
-      notes: trimmedNotes
+      notes: trimmedNotes,
+      videoCount: parsedVideoCount
     });
 
     res.json(updatedEntry);

@@ -141,6 +141,11 @@ const CheckInEditableCell = ({
       if (isNaN(processedValue)) {
         processedValue = null;
       }
+    } else if (fieldType === 'videoCount') {
+      processedValue = inputValue === '' ? null : parseInt(inputValue, 10);
+      if (isNaN(processedValue)) {
+        processedValue = null;
+      }
     } else if (fieldType === 'date') {
       processedValue = inputValue || null;
     } else if (fieldType === 'time') {
@@ -190,6 +195,20 @@ const CheckInEditableCell = ({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Enter hours"
+            className="field-popover-input"
+          />
+        );
+
+      case 'videoCount':
+        return (
+          <input
+            ref={inputRef}
+            type="number"
+            min="0"
+            value={inputValue || ''}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Enter video count"
             className="field-popover-input"
           />
         );

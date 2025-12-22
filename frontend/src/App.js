@@ -6,6 +6,7 @@ import Register from './components/Register';
 import WorkList from './components/WorkList';
 import Statistics from './components/Statistics';
 import CheckIn from './components/CheckIn';
+import AdminDashboard from './components/AdminDashboard';
 import './index.css';
 
 const PrivateRoute = ({ children }) => {
@@ -49,6 +50,7 @@ function App() {
               </PrivateRoute>
             }
           />
+          <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/" element={<Navigate to="/dashboard" />} />
         </Routes>
       </Router>

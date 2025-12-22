@@ -32,6 +32,7 @@ const CheckIn = () => {
     startTime: '',
     endTime: '',
     hours: '',
+    videoCount: '',
     notes: ''
   });
   const [entries, setEntries] = useState([]);
@@ -124,11 +125,14 @@ const CheckIn = () => {
 
     try {
       setSaving(true);
+      const parsedVideoCount = form.videoCount ? parseInt(form.videoCount, 10) : null;
+      
       await checkInsAPI.create({
         date: form.date,
         start_time: form.startTime || null,
         end_time: form.endTime || null,
         hours: Number(parsedHours.toFixed(2)),
+        video_count: parsedVideoCount && !isNaN(parsedVideoCount) ? parsedVideoCount : null,
         notes: form.notes.trim() || null
       });
       setSuccess('Check-in logged successfully.');
@@ -137,6 +141,7 @@ const CheckIn = () => {
         startTime: '',
         endTime: '',
         hours: '',
+        videoCount: '',
         notes: ''
       }));
       fetchEntries();
@@ -256,6 +261,8 @@ const CheckIn = () => {
         }
       } else if (field === 'hours') {
         updateData.hours = value;
+      } else if (field === 'videoCount') {
+        updateData.video_count = value !== null && value !== '' ? parseInt(value, 10) : null;
       } else if (field === 'notes') {
         updateData.notes = value;
       }
@@ -362,6 +369,18 @@ const CheckIn = () => {
               </div>
 
               <div className="form-group">
+                <label htmlFor="video-count">Videos Extracted</label>
+                <input
+                  type="number"
+                  min="0"
+                  id="video-count"
+                  value={form.videoCount}
+                  onChange={handleChange('videoCount')}
+                  placeholder="Number of videos extracted"
+                />
+              </div>
+
+              <div className="form-group">
                 <label htmlFor="notes">Notes</label>
                 <textarea
                   id="notes"
@@ -385,6 +404,7 @@ const CheckIn = () => {
                       startTime: '',
                       endTime: '',
                       hours: '',
+                      videoCount: '',
                       notes: ''
                     }))
                   }
@@ -467,8 +487,9 @@ const CheckIn = () => {
                       <th>Start</th>
                       <th>End</th>
                       <th>Hours</th>
-                  <th>Notes</th>
-                  <th>Actions</th>
+                      <th>Videos</th>
+                      <th>Notes</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -536,6 +557,22 @@ const CheckIn = () => {
                             onCancel={handleCellCancel}
                             isEditing={editingCell?.entryId === entry.id && editingCell?.field === 'hours'}
                             cellRef={getCellRef(entry.id, 'hours')}
+                          />
+                        </td>
+                        <td 
+                          ref={getCellRef(entry.id, 'videoCount')}
+                          className="check-in-cell-editable"
+                          onClick={(e) => handleCellClick(entry.id, 'videoCount', e)}
+                        >
+                          {entry.video_count !== null && entry.video_count !== undefined ? entry.video_count : '-'}
+                          <CheckInEditableCell
+                            entry={entry}
+                            fieldType="videoCount"
+                            value={entry.video_count}
+                            onSave={(value) => handleCellSave(entry.id, 'videoCount', value)}
+                            onCancel={handleCellCancel}
+                            isEditing={editingCell?.entryId === entry.id && editingCell?.field === 'videoCount'}
+                            cellRef={getCellRef(entry.id, 'videoCount')}
                           />
                         </td>
                         <td 

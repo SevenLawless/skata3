@@ -1,17 +1,18 @@
 const pool = require('../config/database');
 
 const CheckIn = {
-  async create({ userId, checkInDate, startTime, endTime, hours, notes }) {
+  async create({ userId, checkInDate, startTime, endTime, hours, notes, videoCount }) {
     const [result] = await pool.execute(
-      `INSERT INTO check_ins (user_id, check_in_date, start_time, end_time, hours, notes)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO check_ins (user_id, check_in_date, start_time, end_time, hours, notes, video_count)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         userId,
         checkInDate,
         startTime || null,
         endTime || null,
         typeof hours === 'number' ? hours : null,
-        notes || null
+        notes || null,
+        typeof videoCount === 'number' ? videoCount : null
       ]
     );
     return this.findById(result.insertId);
@@ -81,7 +82,32 @@ const CheckIn = {
     return Number(rows[0]?.total || 0);
   },
 
-  async update(id, { checkInDate, startTime, endTime, hours, notes }) {
+  async sumVideoCountByRange(userId, { from, to }) {
+    const conditions = ['ci.user_id = ?'];
+    const params = [userId];
+
+    if (from) {
+      conditions.push('ci.check_in_date >= ?');
+      params.push(from);
+    }
+    if (to) {
+      conditions.push('ci.check_in_date <= ?');
+      params.push(to);
+    }
+
+    const whereClause = conditions.join(' AND ');
+
+    const [rows] = await pool.execute(
+      `SELECT COALESCE(SUM(ci.video_count), 0) as total
+       FROM check_ins ci
+       WHERE ${whereClause} AND ci.video_count IS NOT NULL`,
+      params
+    );
+
+    return Number(rows[0]?.total || 0);
+  },
+
+  async update(id, { checkInDate, startTime, endTime, hours, notes, videoCount }) {
     await pool.execute(
       `UPDATE check_ins 
        SET 
@@ -90,6 +116,7 @@ const CheckIn = {
          end_time = ?,
          hours = ?,
          notes = ?,
+         video_count = ?,
          updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [
@@ -98,6 +125,7 @@ const CheckIn = {
         endTime || null,
         typeof hours === 'number' ? hours : null,
         notes || null,
+        typeof videoCount === 'number' ? videoCount : null,
         id
       ]
     );

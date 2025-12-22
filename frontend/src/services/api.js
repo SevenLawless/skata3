@@ -70,5 +70,11 @@ export const checkInsAPI = {
   remove: (id) => api.delete(`/check-ins/${id}`)
 };
 
+export const adminAPI = {
+  verifyPassword: (password) => api.post('/admin/verify', { password }),
+  getAllUsersData: (params) => api.get('/admin/users/all', { params }),
+  getUserDetailedData: (userId, params) => api.get(`/admin/users/${userId}`, { params })
+};
+
 export default api;
 

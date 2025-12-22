@@ -8,6 +8,7 @@ router.use(authMiddleware);
 
 router.get('/', checkInController.listCheckIns);
 router.post('/', checkInController.createCheckIn);
+router.put('/:id', checkInController.updateCheckIn);
 router.delete('/:id', checkInController.deleteCheckIn);
 
 module.exports = router;

@@ -194,9 +194,71 @@ const createCheckIn = async (req, res) => {
   }
 };
 
+const updateCheckIn = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      date,
+      start_time: startTime,
+      end_time: endTime,
+      hours: hoursInput,
+      notes
+    } = req.body;
+
+    // Verify the check-in exists and belongs to the user
+    const existingEntry = await CheckIn.findById(id);
+    if (!existingEntry || existingEntry.user_id !== req.userId) {
+      return res.status(404).json({ error: 'Check-in not found' });
+    }
+
+    const checkInDate = date || existingEntry.check_in_date;
+    let parsedHours = hoursInput !== undefined && hoursInput !== null && hoursInput !== '' 
+      ? parseFloat(hoursInput) 
+      : null;
+    
+    if (parsedHours !== null && isNaN(parsedHours)) {
+      parsedHours = null;
+    }
+
+    // If hours not provided, try to calculate from times
+    if (!parsedHours && startTime && endTime) {
+      parsedHours = calculateHoursFromTimes(checkInDate, startTime, endTime);
+    }
+
+    // If still no hours, use existing hours
+    if (!parsedHours || parsedHours <= 0) {
+      parsedHours = existingEntry.hours;
+    }
+
+    if (!parsedHours || parsedHours <= 0) {
+      return res.status(400).json({
+        error: 'Please provide total hours or both a valid start and end time'
+      });
+    }
+
+    const trimmedNotes = notes !== undefined 
+      ? (notes ? notes.toString().trim() : null)
+      : existingEntry.notes;
+
+    const updatedEntry = await CheckIn.update(id, {
+      checkInDate,
+      startTime: startTime !== undefined ? (startTime || null) : existingEntry.start_time,
+      endTime: endTime !== undefined ? (endTime || null) : existingEntry.end_time,
+      hours: parsedHours,
+      notes: trimmedNotes
+    });
+
+    res.json(updatedEntry);
+  } catch (error) {
+    console.error('Update check-in error:', error);
+    res.status(500).json({ error: 'Failed to update check-in' });
+  }
+};
+
 module.exports = {
   listCheckIns,
   createCheckIn,
+  updateCheckIn,
   deleteCheckIn
 };
 

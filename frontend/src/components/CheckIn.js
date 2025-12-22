@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { checkInsAPI } from '../services/api';
+import CheckInEditableCell from './CheckInEditableCell';
 
 const formatTime = (value) => {
   if (!value) return '-';
@@ -43,6 +44,8 @@ const CheckIn = () => {
   const [customTo, setCustomTo] = useState(today);
   const [summary, setSummary] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [editingCell, setEditingCell] = useState(null); // { entryId, field }
+  const cellRefs = useRef({});
 
   const fetchEntries = useCallback(async () => {
     try {
@@ -180,6 +183,99 @@ const CheckIn = () => {
     setter(event.target.value);
     setError('');
     setSuccess('');
+  };
+
+  const calculateHoursFromTimes = (date, startTime, endTime) => {
+    if (!startTime || !endTime) return null;
+    const start = new Date(`${date}T${startTime}`);
+    let end = new Date(`${date}T${endTime}`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return null;
+    }
+
+    let diff = (end - start) / 3600000;
+    if (diff <= 0) {
+      end = new Date(end);
+      end.setDate(end.getDate() + 1);
+      diff = (end - start) / 3600000;
+    }
+
+    return Number(diff.toFixed(2));
+  };
+
+  const handleCellClick = (entryId, field, event) => {
+    // Don't trigger edit if clicking on a button or inside an action cell
+    if (event && (event.target.tagName === 'BUTTON' || event.target.closest('button'))) {
+      return;
+    }
+    setEditingCell({ entryId, field });
+  };
+
+  const handleCellCancel = () => {
+    setEditingCell(null);
+  };
+
+  const handleCellSave = async (entryId, field, value) => {
+    const entry = entries.find(e => e.id === entryId);
+    if (!entry) return;
+
+    setError('');
+    setSuccess('');
+
+    try {
+      const updateData = {};
+      
+      if (field === 'date') {
+        updateData.date = value;
+        // Recalculate hours if times exist
+        if (entry.start_time && entry.end_time) {
+          const calculatedHours = calculateHoursFromTimes(value, entry.start_time, entry.end_time);
+          if (calculatedHours) {
+            updateData.hours = calculatedHours;
+          }
+        }
+      } else if (field === 'startTime') {
+        updateData.start_time = value;
+        // Recalculate hours if end time exists
+        const checkInDate = entry.check_in_date;
+        if (value && entry.end_time) {
+          const calculatedHours = calculateHoursFromTimes(checkInDate, value, entry.end_time);
+          if (calculatedHours) {
+            updateData.hours = calculatedHours;
+          }
+        }
+      } else if (field === 'endTime') {
+        updateData.end_time = value;
+        // Recalculate hours if start time exists
+        const checkInDate = entry.check_in_date;
+        if (value && entry.start_time) {
+          const calculatedHours = calculateHoursFromTimes(checkInDate, entry.start_time, value);
+          if (calculatedHours) {
+            updateData.hours = calculatedHours;
+          }
+        }
+      } else if (field === 'hours') {
+        updateData.hours = value;
+      } else if (field === 'notes') {
+        updateData.notes = value;
+      }
+
+      await checkInsAPI.update(entryId, updateData);
+      setSuccess('Check-in updated successfully.');
+      setEditingCell(null);
+      fetchEntries();
+    } catch (err) {
+      console.error('Failed to update check-in', err);
+      setError(err.response?.data?.error || 'Failed to update check-in');
+    }
+  };
+
+  const getCellRef = (entryId, field) => {
+    const key = `${entryId}-${field}`;
+    if (!cellRefs.current[key]) {
+      cellRefs.current[key] = React.createRef();
+    }
+    return cellRefs.current[key];
   };
 
   return (
@@ -378,21 +474,96 @@ const CheckIn = () => {
                   <tbody>
                     {entries.map((entry) => (
                       <tr key={entry.id}>
-                        <td>{formatDate(entry.check_in_date)}</td>
-                        <td>{formatTime(entry.start_time)}</td>
-                        <td>{formatTime(entry.end_time)}</td>
-                        <td>{Number(entry.hours).toFixed(2)}</td>
-                    <td>{entry.notes || '-'}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline"
-                        onClick={() => handleDelete(entry.id)}
-                        disabled={deletingId === entry.id}
-                      >
-                        {deletingId === entry.id ? 'Deleting…' : 'Delete'}
-                      </button>
-                    </td>
+                        <td 
+                          ref={getCellRef(entry.id, 'date')}
+                          className="check-in-cell-editable"
+                          onClick={(e) => handleCellClick(entry.id, 'date', e)}
+                        >
+                          {formatDate(entry.check_in_date)}
+                          <CheckInEditableCell
+                            entry={entry}
+                            fieldType="date"
+                            value={entry.check_in_date}
+                            onSave={(value) => handleCellSave(entry.id, 'date', value)}
+                            onCancel={handleCellCancel}
+                            isEditing={editingCell?.entryId === entry.id && editingCell?.field === 'date'}
+                            cellRef={getCellRef(entry.id, 'date')}
+                          />
+                        </td>
+                        <td 
+                          ref={getCellRef(entry.id, 'startTime')}
+                          className="check-in-cell-editable"
+                          onClick={(e) => handleCellClick(entry.id, 'startTime', e)}
+                        >
+                          {formatTime(entry.start_time)}
+                          <CheckInEditableCell
+                            entry={entry}
+                            fieldType="startTime"
+                            value={entry.start_time}
+                            onSave={(value) => handleCellSave(entry.id, 'startTime', value)}
+                            onCancel={handleCellCancel}
+                            isEditing={editingCell?.entryId === entry.id && editingCell?.field === 'startTime'}
+                            cellRef={getCellRef(entry.id, 'startTime')}
+                          />
+                        </td>
+                        <td 
+                          ref={getCellRef(entry.id, 'endTime')}
+                          className="check-in-cell-editable"
+                          onClick={(e) => handleCellClick(entry.id, 'endTime', e)}
+                        >
+                          {formatTime(entry.end_time)}
+                          <CheckInEditableCell
+                            entry={entry}
+                            fieldType="endTime"
+                            value={entry.end_time}
+                            onSave={(value) => handleCellSave(entry.id, 'endTime', value)}
+                            onCancel={handleCellCancel}
+                            isEditing={editingCell?.entryId === entry.id && editingCell?.field === 'endTime'}
+                            cellRef={getCellRef(entry.id, 'endTime')}
+                          />
+                        </td>
+                        <td 
+                          ref={getCellRef(entry.id, 'hours')}
+                          className="check-in-cell-editable"
+                          onClick={(e) => handleCellClick(entry.id, 'hours', e)}
+                        >
+                          {Number(entry.hours).toFixed(2)}
+                          <CheckInEditableCell
+                            entry={entry}
+                            fieldType="hours"
+                            value={entry.hours}
+                            onSave={(value) => handleCellSave(entry.id, 'hours', value)}
+                            onCancel={handleCellCancel}
+                            isEditing={editingCell?.entryId === entry.id && editingCell?.field === 'hours'}
+                            cellRef={getCellRef(entry.id, 'hours')}
+                          />
+                        </td>
+                        <td 
+                          ref={getCellRef(entry.id, 'notes')}
+                          className="check-in-cell-editable"
+                          onClick={(e) => handleCellClick(entry.id, 'notes', e)}
+                        >
+                          {entry.notes || '-'}
+                          <CheckInEditableCell
+                            entry={entry}
+                            fieldType="notes"
+                            value={entry.notes}
+                            onSave={(value) => handleCellSave(entry.id, 'notes', value)}
+                            onCancel={handleCellCancel}
+                            isEditing={editingCell?.entryId === entry.id && editingCell?.field === 'notes'}
+                            cellRef={getCellRef(entry.id, 'notes')}
+                          />
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline"
+                            onClick={() => handleDelete(entry.id)}
+                            disabled={deletingId === entry.id}
+                          >
+                            {deletingId === entry.id ? 'Deleting…' : 'Delete'}
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

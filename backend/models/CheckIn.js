@@ -81,6 +81,29 @@ const CheckIn = {
     return Number(rows[0]?.total || 0);
   },
 
+  async update(id, { checkInDate, startTime, endTime, hours, notes }) {
+    await pool.execute(
+      `UPDATE check_ins 
+       SET 
+         check_in_date = ?,
+         start_time = ?,
+         end_time = ?,
+         hours = ?,
+         notes = ?,
+         updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
+      [
+        checkInDate,
+        startTime || null,
+        endTime || null,
+        typeof hours === 'number' ? hours : null,
+        notes || null,
+        id
+      ]
+    );
+    return this.findById(id);
+  },
+
   async delete(id) {
     const [result] = await pool.execute('DELETE FROM check_ins WHERE id = ?', [id]);
     return result.affectedRows > 0;

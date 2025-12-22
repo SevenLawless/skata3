@@ -995,20 +995,26 @@ code {
 
 .check-in-table-wrapper {
   overflow-x: auto;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: white;
 }
 
 .check-in-table {
   width: 100%;
   border-collapse: collapse;
+  background: white;
 }
 
 .check-in-table th,
 .check-in-table td {
-  border-bottom: 1px solid #e2e8f0;
-  padding: 12px 8px;
+  border: 1px solid #e2e8f0;
+  padding: 10px 12px;
   text-align: left;
   font-size: 14px;
   color: #1f2937;
+  background: white;
+  position: relative;
 }
 
 .check-in-table th {
@@ -1016,14 +1022,40 @@ code {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #475569;
+  background: #f8fafc;
+  font-weight: 600;
+  border-bottom: 2px solid #cbd5e1;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.check-in-table tbody tr:hover {
+  background: #f8fafc;
 }
 
 .check-in-table tbody tr:last-child td {
-  border-bottom: none;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .check-in-table td:nth-child(4) {
   font-weight: 600;
+  color: #4c1d95;
+}
+
+.check-in-cell-editable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.check-in-cell-editable:hover {
+  background: #f1f5f9 !important;
+  box-shadow: inset 0 0 0 1px #cbd5e1;
+}
+
+.check-in-cell-editable:active {
+  background: #e2e8f0 !important;
 }
 
 @media (max-width: 900px) {

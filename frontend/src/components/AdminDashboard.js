@@ -255,12 +255,8 @@ const AdminDashboard = () => {
                       <tr>
                         <th>User</th>
                         <th>Email</th>
-                        <th>Hours</th>
-                        <th>Videos (Check-Ins)</th>
-                        <th>Videos (Work Items)</th>
-                        <th>Total Videos</th>
-                        <th>Check-Ins</th>
-                        <th>Work Items</th>
+                        <th style={{ background: '#e0e7ff', color: '#3730a3', fontWeight: 'bold' }}>Hours</th>
+                        <th style={{ background: '#e0e7ff', color: '#3730a3', fontWeight: 'bold' }}>Videos (Check-Ins)</th>
                         <th>Last Activity</th>
                         <th>Actions</th>
                       </tr>
@@ -270,12 +266,12 @@ const AdminDashboard = () => {
                         <tr key={user.id}>
                           <td><strong>{user.username}</strong></td>
                           <td>{user.email}</td>
-                          <td>{user.stats.totalHours.toFixed(2)}</td>
-                          <td>{user.stats.totalVideosFromCheckIns}</td>
-                          <td>{user.stats.totalVideosFromWorkItems}</td>
-                          <td><strong>{user.stats.totalVideos}</strong></td>
-                          <td>{user.stats.checkInCount}</td>
-                          <td>{user.stats.workItemCount}</td>
+                          <td style={{ background: '#f8fafc', fontWeight: 'bold', fontSize: '16px', color: '#667eea' }}>
+                            {user.stats.totalHours.toFixed(2)}
+                          </td>
+                          <td style={{ background: '#f8fafc', fontWeight: 'bold', fontSize: '16px', color: '#667eea' }}>
+                            {user.stats.totalVideosFromCheckIns}
+                          </td>
                           <td>{user.stats.lastActivity ? formatDateTime(user.stats.lastActivity) : '-'}</td>
                           <td>
                             <button
